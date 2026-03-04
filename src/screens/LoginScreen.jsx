@@ -3,9 +3,18 @@ import React, { useState } from 'react';
 // ── Hardcoded users ──────────────────────────────────────────────────────────
 // Add/remove users here. Passwords are plain-text since this is a small team app.
 const USERS = [
-    { username: 'yigit', password: '1234', displayName: 'Yiğit' },
-    { username: 'admin', password: 'admin', displayName: 'Admin' },
-    { username: 'teacher1', password: 'teacher1', displayName: 'Teacher 1' },
+    { username: 'yiğit', password: '218687', displayName: 'Yiğit' },
+    { username: 'eren', password: 'patlıcan', displayName: 'Eren' },
+    { username: 'efe', password: 'gana', displayName: 'Efe' },
+    { username: 'leyla', password: 'deniz', displayName: 'Leyla' },
+    { username: 'tod', password: 'afrasiyab', displayName: 'Tod' },
+    { username: 'emine', password: 'çilek', displayName: 'Emine' },
+    { username: 'şems', password: 'kivi', displayName: 'Şems' },
+    { username: 'nur', password: 'müdire', displayName: 'Nur' },
+    { username: 'beyza', password: 'armutlu', displayName: 'Beyza' },
+    { username: 'melike', password: 'kimyager', displayName: 'Melike' },
+    { username: 'ekrem', password: 'hekimbey', displayName: 'Ekrem' },
+    { username: 'owner', password: '12345', displayName: 'Owner' },
 ];
 
 export { USERS };

@@ -47,6 +47,8 @@
   /* Sizing */
   --nav-height: 64px;
   --tab-bar-height: 68px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   --border-radius: 16px;
   --border-radius-sm: 10px;
   --border-radius-lg: 24px;
@@ -90,6 +92,8 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  /* Ensure root itself never overflows */
+  overflow: hidden;
 }
 
 /* ===========================
@@ -98,8 +102,9 @@ body {
 .app-shell {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  /* Use dvh so the shell is exactly the visible viewport height on mobile */
   height: 100dvh;
+  max-height: 100dvh;
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
@@ -120,15 +125,21 @@ body {
    TOP NAVIGATION BAR
 =========================== */
 .top-nav {
-  height: var(--nav-height);
+  /* Base height + extra space for notch/status bar */
+  height: calc(var(--nav-height) + var(--safe-top));
+  padding-top: var(--safe-top);
   background: var(--bg-glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  /* align content to bottom within the taller bar */
   justify-content: space-between;
-  padding: 0 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 12px;
+  /* visually center content in the 64px zone below safe area */
   flex-shrink: 0;
   z-index: 100;
   position: relative;
@@ -230,18 +241,20 @@ body {
    BOTTOM TAB BAR
 =========================== */
 .tab-bar {
-  height: var(--tab-bar-height);
+  /* Base height + safe area for home indicator */
+  height: calc(var(--tab-bar-height) + var(--safe-bottom));
   background: var(--bg-glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-color);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  /* align icons near the top within the taller bar */
   justify-content: space-around;
   padding: 0 8px;
+  padding-bottom: var(--safe-bottom);
   flex-shrink: 0;
   z-index: 100;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .tab-item {

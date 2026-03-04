@@ -21,9 +21,6 @@ export default function CurriculumScreen({ state, actions }) {
     const [hwTitle, setHwTitle] = useState('');
     const [hwPdfFile, setHwPdfFile] = useState(null);
     const [hwPdfDataUrl, setHwPdfDataUrl] = useState(null);
-    const [showPdfViewer, setShowPdfViewer] = false; // dummy for search
-    const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
-    const [showPdfViewerActual, setShowPdfViewerActual] = useState(false);
 
     const currFileInputRef = useRef(null);
     const hwFileInputRef = useRef(null);
@@ -51,35 +48,11 @@ export default function CurriculumScreen({ state, actions }) {
 
     const handleOpenCurriculum = () => {
         if (!gc) return;
-        if (gcCategory === 'pdf') {
-            // Create Blob URL for more reliable viewing on mobile/webview
-            fetch(gc.dataUrl)
-                .then(res => res.blob())
-                .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    setPdfBlobUrl(url);
-                    setShowPdfViewerActual(true);
-                })
-                .catch(err => {
-                    console.error("PDF Blob error:", err);
-                    // Fallback to direct data URL if blob fails
-                    setPdfBlobUrl(gc.dataUrl);
-                    setShowPdfViewerActual(true);
-                });
-        } else {
-            const a = document.createElement('a');
-            a.href = gc.dataUrl;
-            a.download = gc.name;
-            a.click();
-        }
-    };
-
-    const closePdfViewer = () => {
-        if (pdfBlobUrl && pdfBlobUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(pdfBlobUrl);
-        }
-        setPdfBlobUrl(null);
-        setShowPdfViewerActual(false);
+        // Both PDF and Excel: trigger a download (works reliably in all webviews)
+        const a = document.createElement('a');
+        a.href = gc.dataUrl;
+        a.download = gc.name;
+        a.click();
     };
 
     // ── Class curriculum editing ────────────────────────────────────────────
@@ -210,7 +183,7 @@ export default function CurriculumScreen({ state, actions }) {
                                 onClick={handleOpenCurriculum}
                                 style={{ flex: 1, maxWidth: 140 }}
                             >
-                                {gcCategory === 'pdf' ? '👁 View' : '⬇ Open'}
+                                ⬇ İndir
                             </button>
                         )}
                         <button
@@ -310,78 +283,7 @@ export default function CurriculumScreen({ state, actions }) {
                 </>
             )}
 
-            {/* ══════════════════════════════════════════════════════════════
-                PDF VIEWER OVERLAY
-            ══════════════════════════════════════════════════════════════ */}
-            {showPdfViewerActual && gc && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 300,
-                    background: 'rgba(0,0,0,0.95)',
-                    display: 'flex', flexDirection: 'column',
-                }}>
-                    {/* Viewer header */}
-                    <div style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        padding: '14px 16px',
-                        background: 'var(--bg-secondary)',
-                        borderBottom: '1px solid var(--border-color)',
-                        flexShrink: 0,
-                    }}>
-                        <button
-                            onClick={closePdfViewer}
-                            style={{
-                                background: 'rgba(255,255,255,0.08)', border: 'none',
-                                borderRadius: 10, color: 'var(--text-primary)',
-                                fontSize: 18, padding: '6px 14px',
-                                cursor: 'pointer', fontWeight: 700,
-                            }}
-                        >✕</button>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {gc.name}
-                            </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Curriculum Preview</div>
-                        </div>
-                        <a
-                            href={gc.dataUrl}
-                            download={gc.name}
-                            style={{
-                                background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-blue))',
-                                color: 'white', border: 'none',
-                                borderRadius: 10, padding: '8px 16px',
-                                fontSize: 13, fontWeight: 700, textDecoration: 'none',
-                                boxShadow: '0 4px 12px rgba(124, 106, 247, 0.3)',
-                            }}
-                        >Save</a>
-                    </div>
 
-                    {/* PDF Content Area */}
-                    <div style={{ flex: 1, position: 'relative', background: '#e0e0e0' }}>
-                        {pdfBlobUrl ? (
-                            <iframe
-                                src={pdfBlobUrl}
-                                style={{ width: '100%', height: '100%', border: 'none' }}
-                                title="Curriculum PDF"
-                            />
-                        ) : (
-                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
-                                Loading curriculum...
-                            </div>
-                        )}
-
-                        {/* Mobile Warning/Help (sometimes data/blob URLs are still tricky in native webviews) */}
-                        <div style={{
-                            position: 'absolute', bottom: 20, left: 20, right: 20,
-                            background: 'rgba(255, 255, 255, 0.95)',
-                            padding: '12px', borderRadius: 12, color: '#333',
-                            fontSize: 12, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                            pointerEvents: 'none', opacity: 0.8
-                        }}>
-                            If the preview is empty, please use the <strong>Save</strong> button to open the document.
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ══ Edit Curriculum Sheet ══════════════════════════════════════ */}
             {showEdit && (

@@ -1,5 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+// Request microphone permission via Capacitor (native) or browser Permissions API
+async function requestMicPermission() {
+    try {
+        // Capacitor native path
+        const { Microphone } = await import('@capacitor-community/microphone');
+        const status = await Microphone.requestPermission();
+        return status.microphone === 'granted';
+    } catch {
+        // Browser / PWA fallback — just try to get the stream (triggers prompt)
+        return true; // will be caught downstream if denied
+    }
+}
+
 /**
  * CommentInput — supports text, photo attachment, and voice recording.
  * Props:
@@ -45,6 +58,9 @@ export default function CommentInput({ onSubmit, placeholder = 'Write a note...'
     // ── Voice Recording ──────────────────────────────────────────────────────
     const startRecording = async () => {
         try {
+            // Ask for permission first (Capacitor or browser)
+            await requestMicPermission();
+
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             chunksRef.current = [];
             const recorder = new MediaRecorder(stream);
@@ -63,8 +79,9 @@ export default function CommentInput({ onSubmit, placeholder = 'Write a note...'
             setRecordingSecs(0);
             setPhotoPreview(null); // reset photo if any
             timerRef.current = setInterval(() => setRecordingSecs(s => s + 1), 1000);
-        } catch {
-            alert('Microphone access is required for voice notes. Please allow it in your browser settings.');
+        } catch (err) {
+            console.error('Mic error:', err);
+            alert('Mikrofon erişimine izin verilmedi. Lütfen ayarlardan izin verin.');
         }
     };
 
@@ -170,9 +187,9 @@ export default function CommentInput({ onSubmit, placeholder = 'Write a note...'
                 />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {/* Photo button */}
+                    {/* Gallery photo button */}
                     <label
-                        title="Attach photo"
+                        title="Attach photo from gallery"
                         style={{
                             width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
                             background: photoPreview ? 'rgba(79,172,254,0.2)' : 'rgba(255,255,255,0.06)',
@@ -186,6 +203,27 @@ export default function CommentInput({ onSubmit, placeholder = 'Write a note...'
                             ref={photoInputRef}
                             type="file"
                             accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handlePhotoChange}
+                        />
+                    </label>
+
+                    {/* Direct camera button */}
+                    <label
+                        title="Take a photo with camera"
+                        style={{
+                            width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid var(--border-color)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        📷
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
                             style={{ display: 'none' }}
                             onChange={handlePhotoChange}
                         />
@@ -219,7 +257,7 @@ export default function CommentInput({ onSubmit, placeholder = 'Write a note...'
             {/* Hint */}
             {!photoPreview && !audioDataUrl && !isRecording && (
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, paddingLeft: 2 }}>
-                    📸 Attach photo &nbsp;·&nbsp; 🎙 Record voice note
+                    📸 Galeri &nbsp;·&nbsp; 📷 Kamera &nbsp;·&nbsp; 🎙 Ses kaydı
                 </div>
             )}
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { BottomSheet, StudentAvatar, PerfBadge, EmptyState, CLASS_COLORS } from '../components/Shared';
+import { Browser } from '@capacitor/browser';
 import CommentInput from '../components/CommentInput';
 import PhotoViewer from '../components/PhotoViewer';
 
@@ -67,7 +68,18 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
         return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
-    const TABS = ['students', 'comments'];
+    // Aggregate unique homework assignments across the class
+    const classHomeworkMap = new Map();
+    students.forEach(s => {
+        (s.homework || []).forEach(hw => {
+            if (!classHomeworkMap.has(hw.id)) {
+                classHomeworkMap.set(hw.id, hw);
+            }
+        });
+    });
+    const classHomeworks = Array.from(classHomeworkMap.values()).sort((a, b) => b.assignedAt - a.assignedAt);
+
+    const TABS = ['students', 'homework', 'comments'];
     const swipeRef = useRef({ startX: 0, startY: 0 });
     const handleTouchStart = (e) => {
         swipeRef.current.startX = e.touches[0].clientX;
@@ -76,11 +88,26 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
     const handleTouchEnd = (e) => {
         const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
         const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
-        if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+        // Strict horizontal wipe to avoid triggering during vertical scrolls
+        if (Math.abs(dx) < 40 || Math.abs(dy) > 50) return;
 
         const idx = TABS.indexOf(activeTab);
         if (dx < 0 && idx < TABS.length - 1) setActiveTab(TABS[idx + 1]);
         else if (dx > 0 && idx > 0) setActiveTab(TABS[idx - 1]);
+    };
+
+    // Open PDF helper
+    const handleOpenPdf = async (dataUrl) => {
+        if (!dataUrl) return;
+        if (dataUrl.startsWith('https://')) {
+            await Browser.open({ url: dataUrl, presentationStyle: 'fullscreen', windowName: '_blank' });
+        } else {
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'homework.pdf';
+            a.click();
+        }
     };
 
     return (
@@ -125,19 +152,19 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
-                {['students', 'comments'].map(tab => (
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', overflowX: 'auto' }} className="no-scrollbar">
+                {TABS.map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         style={{
-                            flex: 1, padding: '14px', border: 'none', background: 'transparent',
+                            flex: '1 0 auto', padding: '14px 12px', border: 'none', background: 'transparent',
                             color: activeTab === tab ? 'var(--accent-purple)' : 'var(--text-secondary)',
-                            fontWeight: 700, fontSize: 13, cursor: 'pointer', letterSpacing: '0.5px',
+                            fontWeight: 700, fontSize: 13, cursor: 'pointer', letterSpacing: '0.3px',
                             borderBottom: activeTab === tab ? '2px solid var(--accent-purple)' : '2px solid transparent',
-                            textTransform: 'capitalize', transition: 'all 0.15s',
+                            textTransform: 'capitalize', transition: 'all 0.15s', whiteSpace: 'nowrap'
                         }}
-                    >{tab === 'students' ? '👥 Students' : '💬 Class Notes'}</button>
+                    >{tab === 'students' ? '👥 Students' : tab === 'homework' ? '📚 Homeworks' : '💬 Class Notes'}</button>
                 ))}
             </div>
 
@@ -152,7 +179,7 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
                         {students.length === 0 ? (
                             <EmptyState icon="👤" title="No students yet" desc="Add your first student to this class." />
                         ) : (
-                            <div className="card-list">
+                            <div className="card-list" style={{ touchAction: 'pan-y' }}>
                                 {students.map(student => (
                                     <div key={student.id} className="card"
                                         onClick={() => onNavigate('student-detail', { studentId: student.id, classId })}>
@@ -177,6 +204,44 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
                                     </div>
                                 ))}
                             </div>
+                        )}
+                    </>
+                )}
+
+                {/* Homework Tab */}
+                {activeTab === 'homework' && (
+                    <>
+                        <div className="section-title mb-16">Assigned Homeworks</div>
+                        {classHomeworks.length === 0 ? (
+                            <EmptyState icon="📚" title="No homework yet" desc="Class-wide assignments will appear here." />
+                        ) : (
+                            classHomeworks.map(hw => (
+                                <div key={hw.id} style={{
+                                    background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--border-radius)', padding: '16px', marginBottom: 12,
+                                }}>
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 6 }}>{hw.title}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: hw.pdfName ? 12 : 0 }}>Assigned: {formatDate(hw.assignedAt)}</div>
+
+                                    {hw.pdfName && (
+                                        <div
+                                            onClick={() => handleOpenPdf(hw.pdfDataUrl)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 8,
+                                                background: 'rgba(79,172,254,0.08)', padding: '10px 14px', borderRadius: 10,
+                                                border: '1px solid rgba(79,172,254,0.2)', cursor: 'pointer'
+                                            }}
+                                        >
+                                            <span style={{ fontSize: 20 }}>📄</span>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: 14, color: 'var(--accent-blue)', fontWeight: 600 }}>{hw.pdfName}</div>
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tap to view PDF</div>
+                                            </div>
+                                            <span style={{ color: 'var(--accent-blue)', fontSize: 18 }}>👁</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
                         )}
                     </>
                 )}

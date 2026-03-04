@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { BottomSheet, EmptyState } from '../components/Shared';
+import { Browser } from '@capacitor/browser';
 
 const CLASS_COLOR_ACCENTS = ['#7c6af7', '#4facfe', '#43e8c8', '#f6a832', '#f76a7c', '#43c98f', '#b07cfa', '#fe9a4f'];
 
@@ -21,7 +22,6 @@ export default function CurriculumScreen({ state, actions, onNavigate, currentUs
     const [hwTitle, setHwTitle] = useState('');
     const [hwPdfFile, setHwPdfFile] = useState(null);
     const [hwPdfDataUrl, setHwPdfDataUrl] = useState(null);
-    const [showDocViewer, setShowDocViewer] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const currFileInputRef = useRef(null);
@@ -48,11 +48,11 @@ export default function CurriculumScreen({ state, actions, onNavigate, currentUs
         e.target.value = '';
     };
 
-    const handleOpenCurriculum = () => {
+    const handleOpenCurriculum = async () => {
         if (!gc) return;
-        // If URL is a Firebase Storage URL (https://...), use Google Docs Viewer
+        // If URL is a Firebase Storage URL (https://...), use native Capacitor Browser
         if (gc.dataUrl && gc.dataUrl.startsWith('https://')) {
-            setShowDocViewer(true);
+            await Browser.open({ url: gc.dataUrl, presentationStyle: 'fullscreen', windowName: '_blank' });
         } else {
             // Fallback: trigger download for data: URLs
             const a = document.createElement('a');
@@ -60,11 +60,6 @@ export default function CurriculumScreen({ state, actions, onNavigate, currentUs
             a.download = gc.name;
             a.click();
         }
-    };
-
-    const getGoogleViewerUrl = () => {
-        if (!gc?.dataUrl) return '';
-        return `https://docs.google.com/viewer?url=${encodeURIComponent(gc.dataUrl)}&embedded=true`;
     };
 
     // ── Class curriculum editing ────────────────────────────────────────────
@@ -339,9 +334,9 @@ export default function CurriculumScreen({ state, actions, onNavigate, currentUs
                             onKeyDown={e => e.key === 'Enter' && handleSave()}
                         />
                     </div>
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                         <button className="btn btn-secondary btn-full" onClick={() => setShowEdit(false)}>Cancel</button>
-                        <button className="btn btn-primary btn-full" onClick={handleSave}>Save</button>
+                        <button className="btn btn-primary btn-full" onClick={handleSave}>Update</button>
                     </div>
                 </BottomSheet>
             )}
@@ -349,24 +344,24 @@ export default function CurriculumScreen({ state, actions, onNavigate, currentUs
             {/* ══ Assign Homework Sheet ══════════════════════════════════════ */}
             {showAssignHw && (
                 <BottomSheet
-                    title={`Assign Homework — ${state.classes.find(c => c.id === hwClassId)?.name || ''}`}
+                    title={`Assign Class Homework`}
                     onClose={() => setShowAssignHw(false)}
                 >
                     <div className="form-group">
                         <label className="form-label">Homework Title</label>
                         <input
                             className="form-input"
-                            placeholder="e.g. Workbook p.45 Ex. 3..."
+                            placeholder="e.g. Unit 3 Worksheet"
                             value={hwTitle}
                             onChange={e => setHwTitle(e.target.value)}
                             autoFocus
                         />
                     </div>
                     <div className="form-group">
-                        <label className="form-label">Attach PDF (optional)</label>
+                        <label className="form-label">PDF Attachment (optional)</label>
                         <label style={{
                             display: 'flex', alignItems: 'center', gap: 10,
-                            background: 'var(--bg-card)', border: '1px dashed var(--border-active)',
+                            background: 'rgba(255,255,255,0.04)', border: '1px dashed var(--border-color)',
                             borderRadius: 10, padding: '14px 16px', cursor: 'pointer',
                         }}>
                             <span style={{ fontSize: 22 }}>{hwPdfFile ? '✅' : '📄'}</span>
@@ -384,54 +379,11 @@ export default function CurriculumScreen({ state, actions, onNavigate, currentUs
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button className="btn btn-secondary btn-full" onClick={() => setShowAssignHw(false)}>Cancel</button>
-                        <button className="btn btn-primary btn-full" onClick={handleAssignHw} disabled={!hwTitle.trim()}>
-                            Assign to All Students
+                        <button className="btn btn-primary btn-full" onClick={handleAssignHw} disabled={!hwTitle.trim() || !hwClassId}>
+                            Assign
                         </button>
                     </div>
                 </BottomSheet>
-            )}
-
-            {/* Google Docs Viewer Overlay */}
-            {showDocViewer && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 400,
-                    background: 'rgba(0,0,0,0.92)',
-                    display: 'flex', flexDirection: 'column',
-                }}>
-                    <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '12px 16px', background: 'rgba(30,30,42,0.95)',
-                        borderBottom: '1px solid rgba(255,255,255,0.08)',
-                    }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-                            📄 {gc?.name || 'Document'}
-                        </span>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <a
-                                href={gc?.dataUrl}
-                                download={gc?.name}
-                                style={{
-                                    background: 'rgba(79,172,254,0.15)', border: 'none', borderRadius: 8,
-                                    color: 'var(--accent-blue)', fontSize: 12, padding: '6px 12px',
-                                    cursor: 'pointer', fontWeight: 600, textDecoration: 'none',
-                                }}
-                            >⬇ İndir</a>
-                            <button
-                                onClick={() => setShowDocViewer(false)}
-                                style={{
-                                    background: 'rgba(247,106,124,0.15)', border: 'none', borderRadius: 8,
-                                    color: 'var(--accent-rose)', fontSize: 14, padding: '6px 14px',
-                                    cursor: 'pointer', fontWeight: 700,
-                                }}
-                            >✕</button>
-                        </div>
-                    </div>
-                    <iframe
-                        src={getGoogleViewerUrl()}
-                        style={{ flex: 1, border: 'none', width: '100%', background: 'white' }}
-                        title="Document Viewer"
-                    />
-                </div>
             )}
         </div>
     );

@@ -171,7 +171,7 @@ export function useFirebaseStore() {
         // ── Classes ──────────────────────────────────────────────────────────
         addClass: (payload) => {
             const id = uid();
-            const data = { id, name: payload.name, color: payload.color || '#7c6af7', createdAt: now() };
+            const data = { id, name: payload.name, color: payload.color || '#7c6af7', ageGroup: payload.ageGroup || 'KIDS', createdAt: now() };
             dispatch({ type: 'OPT_ADD_CLASS', payload: data });
             setDoc(doc(db, C.classes, id), data).catch(console.error);
         },

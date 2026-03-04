@@ -123,9 +123,14 @@ export default function App() {
 
   useEffect(() => {
     const listener = CapApp.addListener('backButton', () => {
+      // 1. Give modals/popups a chance to intercept
+      const event = new CustomEvent('hardwareBackPress', { cancelable: true });
+      window.dispatchEvent(event);
+      if (event.defaultPrevented) return; // A modal handled it!
+
       const currentNav = navRef.current;
 
-      // If NOT on a main tab, navigate back to the appropriate parent
+      // 2. If NOT on a main tab, navigate back
       if (!TAB_IDS.includes(currentNav.screen)) {
         if (currentNav.screen === 'student-detail') {
           handleBack('class-detail', { classId: currentNav.params.classId });
@@ -134,13 +139,12 @@ export default function App() {
         }
         backPressCount.current = 0;
       } else {
-        // If on a main tab, press back again to exit
+        // 3. If on main tab, press back again to exit
         if (backPressCount.current >= 1) {
           setShowExitConfirm(true);
         } else {
           backPressCount.current += 1;
           setTimeout(() => { backPressCount.current = 0; }, 2000);
-          // Optional: Could show a toast here "Press back again to exit"
         }
       }
     });

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { BottomSheet, StudentAvatar, StarRating, HwBadge, PerfBadge, EmptyState } from '../components/Shared';
+import { Browser } from '@capacitor/browser';
 import { calcPerformance, PERF_LABELS } from '../store/useStore';
 import CommentInput from '../components/CommentInput';
 import PhotoViewer from '../components/PhotoViewer';
@@ -112,6 +113,18 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
         setHwTitle('');
         setHwPdfFile(null);
         setHwPdfDataUrl(null);
+    };
+
+    const handleOpenPdf = async (dataUrl, fileName) => {
+        if (!dataUrl) return;
+        if (dataUrl.startsWith('https://')) {
+            await Browser.open({ url: dataUrl, presentationStyle: 'fullscreen', windowName: '_blank' });
+        } else {
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = fileName || 'homework.pdf';
+            a.click();
+        }
     };
 
     const avgStars = student.ratings?.length
@@ -286,19 +299,17 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
                                             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 4 }}>{hw.title}</div>
                                             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Assigned: {formatDate(hw.assignedAt)}</div>
                                             {hw.pdfName && (
-                                                <div style={{
-                                                    display: 'flex', alignItems: 'center', gap: 6, marginTop: 10,
-                                                    background: 'rgba(79,172,254,0.08)', padding: '8px 12px', borderRadius: 8,
-                                                    border: '1px solid rgba(79,172,254,0.2)',
-                                                }}>
+                                                <div
+                                                    onClick={() => handleOpenPdf(hw.pdfDataUrl, hw.pdfName)}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: 6, marginTop: 10,
+                                                        background: 'rgba(79,172,254,0.08)', padding: '8px 12px', borderRadius: 8,
+                                                        border: '1px solid rgba(79,172,254,0.2)', cursor: 'pointer'
+                                                    }}
+                                                >
                                                     <span style={{ fontSize: 18 }}>📄</span>
-                                                    <span style={{ fontSize: 13, color: 'var(--accent-blue)', fontWeight: 600 }}>{hw.pdfName}</span>
-                                                    {hw.pdfDataUrl && (
-                                                        <a href={hw.pdfDataUrl} download={hw.pdfName}
-                                                            style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--accent-blue)', textDecoration: 'none' }}>
-                                                            ⬇ View
-                                                        </a>
-                                                    )}
+                                                    <span style={{ fontSize: 13, color: 'var(--accent-blue)', fontWeight: 600, flex: 1 }}>{hw.pdfName}</span>
+                                                    <span style={{ fontSize: 12, color: 'var(--accent-blue)' }}>⬇ View</span>
                                                 </div>
                                             )}
                                         </div>

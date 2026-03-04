@@ -186,23 +186,23 @@ export default function CurriculumScreen({ state, actions }) {
                         )}
                     </div>
 
-                    {/* Action buttons */}
+                    {/* Action area */}
                     <div style={{ display: 'flex', gap: 10, width: '100%', justifyContent: 'center' }}>
                         {gc && (
                             <button
                                 className="btn btn-primary"
                                 onClick={handleOpenCurriculum}
-                                style={{ flex: 1, maxWidth: 140 }}
+                                style={{ flex: 1 }}
                             >
-                                👁 Görüntüle
+                                📄 General Curriculum
                             </button>
                         )}
                         <button
                             className="btn btn-secondary"
                             onClick={() => currFileInputRef.current?.click()}
-                            style={{ flex: 1, maxWidth: 140 }}
+                            style={{ flex: gc ? 0 : 1, minWidth: gc ? 'auto' : undefined }}
                         >
-                            {gc ? '🔄 Replace' : '⬆ Upload'}
+                            {gc ? '🔄 Change' : '⬆ Upload Curriculum'}
                         </button>
                         <input
                             ref={currFileInputRef}

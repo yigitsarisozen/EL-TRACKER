@@ -296,6 +296,22 @@ export function useFirebaseStore() {
             batch.commit().catch(console.error);
         },
 
+        // Per-student homework assignment
+        addStudentHomework: async ({ studentId, title, pdfName, pdfDataUrl }) => {
+            const hwId = uid();
+            let pdfUrl = null;
+            if (pdfDataUrl && pdfDataUrl.startsWith('data:')) {
+                pdfUrl = await uploadIfBase64(pdfDataUrl, `homework/${hwId}.pdf`);
+            }
+            const hw = { id: hwId, title, pdfName: pdfName || null, pdfDataUrl: pdfUrl, status: 'none', assignedAt: now() };
+            const student = state.students.find(s => s.id === studentId);
+            if (!student) return;
+            dispatch({ type: 'OPT_ADD_STUDENT_COMMENT', payload: { studentId, comment: { id: 'hw_' + hwId, text: '', type: 'text', createdAt: now() } } });
+            const updated = [...(student.homework || []), hw];
+            dispatch({ type: 'OPT_UPDATE_STUDENT', payload: { id: studentId, homework: updated } });
+            updateDoc(doc(db, C.students, studentId), { homework: updated }).catch(console.error);
+        },
+
         updateHomeworkStatus: ({ studentId, hwId, status }) => {
             dispatch({ type: 'OPT_UPDATE_HW_STATUS', payload: { studentId, hwId, status } });
             const student = state.students.find(s => s.id === studentId);

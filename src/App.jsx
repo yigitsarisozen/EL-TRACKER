@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import './index.css';
 import { useFirebaseStore } from './firebase/useFirebaseStore';
 
@@ -8,6 +8,7 @@ import ClassDetailScreen from './screens/ClassDetailScreen';
 import StudentDetailScreen from './screens/StudentDetailScreen';
 import CurriculumScreen from './screens/CurriculumScreen';
 import TrashScreen from './screens/TrashScreen';
+import { BottomSheet } from './components/Shared';
 
 // ─── Tab definitions ────────────────────────────────────────────────────────
 const TABS = [
@@ -44,22 +45,24 @@ function getNavConfig(screen, params, state) {
 export default function App() {
   const { state, actions } = useFirebaseStore();
 
-  // ── Auth state ──────────────────────────────────────────────────────────────
+  // ── Auth state (localStorage = persistent across app restarts) ─────────────
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const stored = sessionStorage.getItem('ga_current_user');
+      const stored = localStorage.getItem('ga_current_user');
       return stored ? JSON.parse(stored) : null;
     } catch { return null; }
   });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogin = (user) => {
     setCurrentUser(user);
-    sessionStorage.setItem('ga_current_user', JSON.stringify(user));
+    localStorage.setItem('ga_current_user', JSON.stringify(user));
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    sessionStorage.removeItem('ga_current_user');
+    localStorage.removeItem('ga_current_user');
+    setShowLogoutConfirm(false);
   };
 
   // ── Navigation state ────────────────────────────────────────────────────────
@@ -80,6 +83,32 @@ export default function App() {
 
   const handleBack = (to, params = {}) => {
     navigate(to, params);
+  };
+
+  // ── Swipe between tabs ────────────────────────────────────────────────────
+  const swipeRef = useRef({ startX: 0, startY: 0 });
+  const TAB_IDS = TABS.map(t => t.id);
+
+  const handleTouchStart = (e) => {
+    swipeRef.current.startX = e.touches[0].clientX;
+    swipeRef.current.startY = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    // only for top-level tab screens
+    if (!TAB_IDS.includes(nav.screen)) return;
+    const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
+    const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
+    // must be horizontal swipe (|dx| > 60 and |dx| > |dy|*1.5)
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const currentIdx = TAB_IDS.indexOf(activeTab);
+    if (dx < 0 && currentIdx < TAB_IDS.length - 1) {
+      // swipe left → next tab
+      handleTabPress(TAB_IDS[currentIdx + 1]);
+    } else if (dx > 0 && currentIdx > 0) {
+      // swipe right → prev tab
+      handleTabPress(TAB_IDS[currentIdx - 1]);
+    }
   };
 
   // ── If not logged in, show Login ────────────────────────────────────────────
@@ -106,7 +135,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* Syncing overlay — shown only on very first load until Firestore responds */}
+      {/* Syncing overlay */}
       {!state._synced && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 500,
@@ -128,6 +157,7 @@ export default function App() {
           }} />
         </div>
       )}
+
       {/* Top Nav */}
       <nav className="top-nav">
         <div className="top-nav__left">
@@ -140,32 +170,34 @@ export default function App() {
           </div>
         </div>
         <div className="top-nav__actions">
-          {/* Current user + logout */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
+          {/* Tap name → show logout confirm */}
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            style={{
+              background: 'rgba(255,255,255,0.06)', border: 'none',
+              borderRadius: 8, padding: '6px 12px',
+              fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
             <span style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
-              padding: '4px 8px', borderRadius: 8,
-              background: 'rgba(255,255,255,0.06)',
-            }}>{currentUser.displayName}</span>
-            <button
-              onClick={handleLogout}
-              title="Sign out"
-              style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'rgba(247,106,124,0.12)',
-                border: 'none', color: 'var(--accent-rose)',
-                fontSize: 14, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', cursor: 'pointer',
-              }}
-            >⏻</button>
-          </div>
+              width: 24, height: 24, borderRadius: 8,
+              background: 'linear-gradient(135deg, #7c6af7, #4facfe)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 800, color: 'white',
+            }}>{currentUser.displayName.charAt(0)}</span>
+            {currentUser.displayName}
+          </button>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="main-content" key={`${nav.screen}-${JSON.stringify(nav.params)}`}>
+      {/* Main Content — swipe enabled */}
+      <main
+        className="main-content"
+        key={`${nav.screen}-${JSON.stringify(nav.params)}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {renderScreen()}
       </main>
 
@@ -196,6 +228,19 @@ export default function App() {
           </button>
         ))}
       </nav>
+
+      {/* Logout confirm */}
+      {showLogoutConfirm && (
+        <BottomSheet title="Çıkış Yap" onClose={() => setShowLogoutConfirm(false)}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+            <strong style={{ color: 'var(--text-primary)' }}>{currentUser.displayName}</strong> olarak çıkış yapmak istiyor musunuz?
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-secondary btn-full" onClick={() => setShowLogoutConfirm(false)}>Hayır</button>
+            <button className="btn btn-danger btn-full" onClick={handleLogout}>Evet, Çıkış Yap</button>
+          </div>
+        </BottomSheet>
+      )}
     </div>
   );
 }

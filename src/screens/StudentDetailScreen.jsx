@@ -14,13 +14,19 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showRename, setShowRename] = useState(false);
     const [newName, setNewName] = useState('');
-    const [showHwViewer, setShowHwViewer] = useState(null); // hw item
+    const [showHwViewer, setShowHwViewer] = useState(null);
     const [ratingStars, setRatingStars] = useState(3);
     const [ratingNote, setRatingNote] = useState('');
     const [comment, setComment] = useState('');
     const [showPhotoUpload, setShowPhotoUpload] = useState(false);
     const [viewPhoto, setViewPhoto] = useState(null);
+    const [showAssignHw, setShowAssignHw] = useState(false);
+    const [hwTitle, setHwTitle] = useState('');
+    const [hwPdfFile, setHwPdfFile] = useState(null);
+    const [hwPdfDataUrl, setHwPdfDataUrl] = useState(null);
     const photoInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
+    const hwFileInputRef = useRef(null);
 
     if (!student) return <div className="screen-pad"><p className="text-muted">Student not found.</p></div>;
 
@@ -83,6 +89,30 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
         reader.readAsDataURL(file);
     };
 
+    const handleDeletePhoto = () => {
+        actions.updateStudent({ id: studentId, photo: null });
+        setShowPhotoUpload(false);
+    };
+
+    const handleHwPdfChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setHwPdfFile(file);
+        const reader = new FileReader();
+        reader.onload = (ev) => setHwPdfDataUrl(ev.target.result);
+        reader.readAsDataURL(file);
+    };
+
+    const handleAssignHwToStudent = () => {
+        if (!hwTitle.trim()) return;
+        // Use the same addHomeworkAssignment but for a single student
+        actions.addStudentHomework({ studentId, title: hwTitle.trim(), pdfName: hwPdfFile?.name || null, pdfDataUrl: hwPdfDataUrl });
+        setShowAssignHw(false);
+        setHwTitle('');
+        setHwPdfFile(null);
+        setHwPdfDataUrl(null);
+    };
+
     const avgStars = student.ratings?.length
         ? (student.ratings.reduce((s, r) => s + r.stars, 0) / student.ratings.length).toFixed(1)
         : '—';
@@ -107,12 +137,18 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
                         }}>+</div>
                     </div>
                     <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
+                    <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoChange} />
                     {showPhotoUpload && (
                         <div style={{
                             position: 'absolute', top: 80, left: 90, background: 'var(--bg-card)',
-                            border: '1px solid var(--border-color)', borderRadius: 10, padding: 12, zIndex: 10,
+                            border: '1px solid var(--border-color)', borderRadius: 10, padding: 10, zIndex: 10,
+                            display: 'flex', flexDirection: 'column', gap: 6, minWidth: 140,
                         }}>
-                            <button className="btn btn-secondary btn-sm" onClick={() => photoInputRef.current?.click()}>Upload Photo</button>
+                            <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => photoInputRef.current?.click()}>📁 Gallery</button>
+                            <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => cameraInputRef.current?.click()}>📷 Camera</button>
+                            {student.photo && (
+                                <button className="btn btn-danger btn-sm" style={{ width: '100%' }} onClick={handleDeletePhoto}>🗑 Remove</button>
+                            )}
                         </div>
                     )}
 
@@ -217,9 +253,12 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
                 {/* HOMEWORK */}
                 {activeTab === 'homework' && (
                     <>
-                        <div className="section-title mb-16">Homework Assignments</div>
+                        <div className="section-header">
+                            <span className="section-title">Homework Assignments</span>
+                            <button className="btn btn-primary btn-sm" onClick={() => setShowAssignHw(true)}>+ Assign</button>
+                        </div>
                         {(!student.homework || student.homework.length === 0) ? (
-                            <EmptyState icon="📚" title="No homework assigned" desc="Homework is assigned from the class curriculum screen." />
+                            <EmptyState icon="📚" title="No homework assigned" desc="Tap '+ Assign' to add homework for this student." />
                         ) : (
                             student.homework.slice().reverse().map(hw => (
                                 <div key={hw.id} style={{
@@ -394,6 +433,48 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
             )}
 
             {viewPhoto && <PhotoViewer src={viewPhoto} onClose={() => setViewPhoto(null)} />}
+
+            {/* Assign Homework to Student */}
+            {showAssignHw && (
+                <BottomSheet title="Assign Homework" onClose={() => setShowAssignHw(false)}>
+                    <div className="form-group">
+                        <label className="form-label">Homework Title</label>
+                        <input
+                            className="form-input"
+                            placeholder="e.g. Unit 3 Worksheet"
+                            value={hwTitle}
+                            onChange={e => setHwTitle(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">PDF Attachment (optional)</label>
+                        <label style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            background: 'rgba(255,255,255,0.04)', border: '1px dashed var(--border-color)',
+                            borderRadius: 10, padding: '14px 16px', cursor: 'pointer',
+                        }}>
+                            <span style={{ fontSize: 22 }}>{hwPdfFile ? '✅' : '📄'}</span>
+                            <span style={{ fontSize: 14, color: hwPdfFile ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                                {hwPdfFile ? hwPdfFile.name : 'Tap to choose a PDF file'}
+                            </span>
+                            <input
+                                ref={hwFileInputRef}
+                                type="file"
+                                accept="application/pdf"
+                                style={{ display: 'none' }}
+                                onChange={handleHwPdfChange}
+                            />
+                        </label>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn btn-secondary btn-full" onClick={() => setShowAssignHw(false)}>Cancel</button>
+                        <button className="btn btn-primary btn-full" onClick={handleAssignHwToStudent} disabled={!hwTitle.trim()}>
+                            Assign
+                        </button>
+                    </div>
+                </BottomSheet>
+            )}
         </div>
     );
 }

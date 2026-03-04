@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { BottomSheet } from '../components/Shared';
 
 export default function TrashScreen({ state, actions }) {
+    const [confirmPurge, setConfirmPurge] = useState(null); // item to purge
+
     const formatDate = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
     const getDaysLeft = (deletedAt) => {
@@ -17,6 +20,12 @@ export default function TrashScreen({ state, actions }) {
             return `Class · ${count} student${count !== 1 ? 's' : ''} included`;
         }
         return 'Student';
+    };
+
+    const handlePurge = () => {
+        if (!confirmPurge) return;
+        actions.purgeTrash(confirmPurge.id);
+        setConfirmPurge(null);
     };
 
     return (
@@ -50,12 +59,26 @@ export default function TrashScreen({ state, actions }) {
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                     <button className="btn btn-secondary btn-sm" onClick={() => actions.restoreTrash(item.id)}>↩ Restore</button>
-                                    <button className="btn btn-danger btn-sm" onClick={() => actions.purgeTrash(item.id)}>× Delete</button>
+                                    <button className="btn btn-danger btn-sm" onClick={() => setConfirmPurge(item)}>× Delete</button>
                                 </div>
                             </div>
                         );
                     })}
                 </>
+            )}
+
+            {/* Purge Confirmation */}
+            {confirmPurge && (
+                <BottomSheet title="Kalıcı Olarak Sil?" onClose={() => setConfirmPurge(null)}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>{getName(confirmPurge)}</strong> kalıcı olarak silinecek.
+                        Bu işlem geri alınamaz.
+                    </p>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn btn-secondary btn-full" onClick={() => setConfirmPurge(null)}>Hayır</button>
+                        <button className="btn btn-danger btn-full" onClick={handlePurge}>Evet, Sil</button>
+                    </div>
+                </BottomSheet>
             )}
         </div>
     );

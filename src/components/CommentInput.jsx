@@ -1,18 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-// Request microphone permission via Capacitor (native) or browser Permissions API
-async function requestMicPermission() {
-    try {
-        // Capacitor native path
-        const { Microphone } = await import('@capacitor-community/microphone');
-        const status = await Microphone.requestPermission();
-        return status.microphone === 'granted';
-    } catch {
-        // Browser / PWA fallback — just try to get the stream (triggers prompt)
-        return true; // will be caught downstream if denied
-    }
-}
-
 /**
  * CommentInput — supports text, photo attachment, and voice recording.
  * Props:
@@ -58,9 +45,8 @@ export default function CommentInput({ onSubmit, placeholder = 'Write a note...'
     // ── Voice Recording ──────────────────────────────────────────────────────
     const startRecording = async () => {
         try {
-            // Ask for permission first (Capacitor or browser)
-            await requestMicPermission();
-
+            // getUserMedia triggers the native permission dialog on iOS/Android (Capacitor)
+            // and in all browsers — no separate permission step needed.
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             chunksRef.current = [];
             const recorder = new MediaRecorder(stream);

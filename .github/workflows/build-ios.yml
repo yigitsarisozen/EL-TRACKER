@@ -44,4 +44,11 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             SKIP_INSTALL=NO \
+            CONFIGURATION_BUILD_DIR=../build \
             | xcpretty || true
+
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-bundle
+          path: ios/build/*.app

@@ -22,10 +22,18 @@ jobs:
       - name: Build Web App
         run: npm run build
 
-      - name: Sync Capacitor
+      - name: Sync Capacitor iOS
         run: npx cap sync ios
 
-      - name: Build iOS App
+      # Resolve Swift Package Manager dependencies 
+      - name: Resolve SPM Dependencies
+        working-directory: ./ios/App
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -workspace App.xcworkspace \
+            -scheme App
+
+      - name: Build iOS App (unsigned)
         working-directory: ./ios/App
         run: |
           xcodebuild clean build \
@@ -34,4 +42,6 @@ jobs:
             -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            SKIP_INSTALL=NO \
+            | xcpretty || true

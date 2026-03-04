@@ -21,7 +21,9 @@ export default function CurriculumScreen({ state, actions }) {
     const [hwTitle, setHwTitle] = useState('');
     const [hwPdfFile, setHwPdfFile] = useState(null);
     const [hwPdfDataUrl, setHwPdfDataUrl] = useState(null);
-    const [showPdfViewer, setShowPdfViewer] = useState(false);
+    const [showPdfViewer, setShowPdfViewer] = false; // dummy for search
+    const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+    const [showPdfViewerActual, setShowPdfViewerActual] = useState(false);
 
     const currFileInputRef = useRef(null);
     const hwFileInputRef = useRef(null);
@@ -50,14 +52,34 @@ export default function CurriculumScreen({ state, actions }) {
     const handleOpenCurriculum = () => {
         if (!gc) return;
         if (gcCategory === 'pdf') {
-            setShowPdfViewer(true);
+            // Create Blob URL for more reliable viewing on mobile/webview
+            fetch(gc.dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    setPdfBlobUrl(url);
+                    setShowPdfViewerActual(true);
+                })
+                .catch(err => {
+                    console.error("PDF Blob error:", err);
+                    // Fallback to direct data URL if blob fails
+                    setPdfBlobUrl(gc.dataUrl);
+                    setShowPdfViewerActual(true);
+                });
         } else {
-            // For Excel/CSV: trigger browser download/open
             const a = document.createElement('a');
             a.href = gc.dataUrl;
             a.download = gc.name;
             a.click();
         }
+    };
+
+    const closePdfViewer = () => {
+        if (pdfBlobUrl && pdfBlobUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(pdfBlobUrl);
+        }
+        setPdfBlobUrl(null);
+        setShowPdfViewerActual(false);
     };
 
     // ── Class curriculum editing ────────────────────────────────────────────
@@ -125,10 +147,11 @@ export default function CurriculumScreen({ state, actions }) {
                     ? '1px solid rgba(124,106,247,0.35)'
                     : '2px dashed rgba(255,255,255,0.12)',
                 borderRadius: 20,
-                padding: '20px',
+                padding: '24px 20px',
                 marginBottom: 24,
                 position: 'relative',
                 overflow: 'hidden',
+                textAlign: 'center', // Center content for better aesthetics
             }}>
                 {/* Decorative glow */}
                 {gc && (
@@ -140,17 +163,18 @@ export default function CurriculumScreen({ state, actions }) {
                     }} />
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
                     {/* File type icon */}
                     <div style={{
-                        width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                        width: 64, height: 64, borderRadius: 18,
                         background: gc
                             ? (gcCategory === 'pdf'
                                 ? 'linear-gradient(135deg, #f76a7c, #f6a832)'
                                 : 'linear-gradient(135deg, #43c98f, #4facfe)')
                             : 'rgba(255,255,255,0.06)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 24,
+                        fontSize: 32,
+                        boxShadow: gc ? '0 8px 20px rgba(0,0,0,0.2)' : 'none',
                     }}>
                         {gc
                             ? (gcCategory === 'pdf' ? '📄' : '📊')
@@ -158,41 +182,41 @@ export default function CurriculumScreen({ state, actions }) {
                         }
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-purple-light)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 3 }}>
+                    <div style={{ width: '100%', minWidth: 0 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-purple-light)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>
                             General Curriculum
                         </div>
                         {gc ? (
                             <>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {gc.name}
                                 </div>
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
                                     Updated {formatDate(gc.uploadedAt)}
                                 </div>
                             </>
                         ) : (
                             <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>
-                                No file uploaded yet
+                                No curriculum file uploaded yet
                             </div>
                         )}
                     </div>
 
                     {/* Action buttons */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: 10, width: '100%', justifyContent: 'center' }}>
                         {gc && (
                             <button
-                                className="btn btn-primary btn-sm"
+                                className="btn btn-primary"
                                 onClick={handleOpenCurriculum}
-                                style={{ fontSize: 13 }}
+                                style={{ flex: 1, maxWidth: 140 }}
                             >
                                 {gcCategory === 'pdf' ? '👁 View' : '⬇ Open'}
                             </button>
                         )}
                         <button
-                            className="btn btn-secondary btn-sm"
+                            className="btn btn-secondary"
                             onClick={() => currFileInputRef.current?.click()}
-                            style={{ fontSize: 13 }}
+                            style={{ flex: 1, maxWidth: 140 }}
                         >
                             {gc ? '🔄 Replace' : '⬆ Upload'}
                         </button>
@@ -208,8 +232,9 @@ export default function CurriculumScreen({ state, actions }) {
 
                 {/* Format hint */}
                 {!gc && (
-                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 14, lineHeight: 1.6 }}>
-                        Upload your school's master curriculum document. Supports <strong style={{ color: 'var(--text-secondary)' }}>PDF</strong> (view in-app) or <strong style={{ color: 'var(--text-secondary)' }}>Excel / CSV</strong> (opens for download).
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 16, lineHeight: 1.6 }}>
+                        Upload your school's master curriculum document.<br />
+                        Supports <strong style={{ color: 'var(--text-secondary)' }}>PDF</strong> or <strong style={{ color: 'var(--text-secondary)' }}>Excel / CSV</strong>.
                     </p>
                 )}
             </div>
@@ -288,10 +313,10 @@ export default function CurriculumScreen({ state, actions }) {
             {/* ══════════════════════════════════════════════════════════════
                 PDF VIEWER OVERLAY
             ══════════════════════════════════════════════════════════════ */}
-            {showPdfViewer && gc && (
+            {showPdfViewerActual && gc && (
                 <div style={{
                     position: 'fixed', inset: 0, zIndex: 300,
-                    background: 'rgba(0,0,0,0.92)',
+                    background: 'rgba(0,0,0,0.95)',
                     display: 'flex', flexDirection: 'column',
                 }}>
                     {/* Viewer header */}
@@ -303,11 +328,11 @@ export default function CurriculumScreen({ state, actions }) {
                         flexShrink: 0,
                     }}>
                         <button
-                            onClick={() => setShowPdfViewer(false)}
+                            onClick={closePdfViewer}
                             style={{
                                 background: 'rgba(255,255,255,0.08)', border: 'none',
                                 borderRadius: 10, color: 'var(--text-primary)',
-                                fontSize: 18, padding: '6px 12px',
+                                fontSize: 18, padding: '6px 14px',
                                 cursor: 'pointer', fontWeight: 700,
                             }}
                         >✕</button>
@@ -315,25 +340,46 @@ export default function CurriculumScreen({ state, actions }) {
                             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {gc.name}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>General Curriculum</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Curriculum Preview</div>
                         </div>
                         <a
                             href={gc.dataUrl}
                             download={gc.name}
                             style={{
-                                background: 'var(--accent-purple)', color: 'white',
-                                borderRadius: 10, padding: '8px 14px',
+                                background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-blue))',
+                                color: 'white', border: 'none',
+                                borderRadius: 10, padding: '8px 16px',
                                 fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                                boxShadow: '0 4px 12px rgba(124, 106, 247, 0.3)',
                             }}
-                        >⬇ Save</a>
+                        >Save</a>
                     </div>
 
-                    {/* PDF iframe */}
-                    <iframe
-                        src={gc.dataUrl}
-                        style={{ flex: 1, border: 'none', background: '#fff' }}
-                        title="General Curriculum PDF"
-                    />
+                    {/* PDF Content Area */}
+                    <div style={{ flex: 1, position: 'relative', background: '#e0e0e0' }}>
+                        {pdfBlobUrl ? (
+                            <iframe
+                                src={pdfBlobUrl}
+                                style={{ width: '100%', height: '100%', border: 'none' }}
+                                title="Curriculum PDF"
+                            />
+                        ) : (
+                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
+                                Loading curriculum...
+                            </div>
+                        )}
+
+                        {/* Mobile Warning/Help (sometimes data/blob URLs are still tricky in native webviews) */}
+                        <div style={{
+                            position: 'absolute', bottom: 20, left: 20, right: 20,
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            padding: '12px', borderRadius: 12, color: '#333',
+                            fontSize: 12, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                            pointerEvents: 'none', opacity: 0.8
+                        }}>
+                            If the preview is empty, please use the <strong>Save</strong> button to open the document.
+                        </div>
+                    </div>
                 </div>
             )}
 

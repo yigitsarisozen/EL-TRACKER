@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { BottomSheet, StudentAvatar, PerfBadge, EmptyState, CLASS_COLORS } from '../components/Shared';
 import CommentInput from '../components/CommentInput';
 import PhotoViewer from '../components/PhotoViewer';
@@ -67,8 +67,24 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
         return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
+    const TABS = ['students', 'comments'];
+    const swipeRef = useRef({ startX: 0, startY: 0 });
+    const handleTouchStart = (e) => {
+        swipeRef.current.startX = e.touches[0].clientX;
+        swipeRef.current.startY = e.touches[0].clientY;
+    };
+    const handleTouchEnd = (e) => {
+        const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
+        const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
+        if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+        const idx = TABS.indexOf(activeTab);
+        if (dx < 0 && idx < TABS.length - 1) setActiveTab(TABS[idx + 1]);
+        else if (dx > 0 && idx > 0) setActiveTab(TABS[idx - 1]);
+    };
+
     return (
-        <div className="page-enter">
+        <div className="page-enter" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
             {/* Class Header */}
             <div style={{
                 background: `linear-gradient(135deg, ${cls.color}22, ${cls.color}11)`,

@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { App as CapApp } from '@capacitor/app';
 import './index.css';
 import { useFirebaseStore } from './firebase/useFirebaseStore';
 
@@ -110,6 +111,41 @@ export default function App() {
       handleTabPress(TAB_IDS[currentIdx - 1]);
     }
   };
+
+  // ── Android Back Button ───────────────────────────────────────────────────
+  const navRef = useRef(nav);
+  const backPressCount = useRef(0);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  useEffect(() => {
+    navRef.current = nav;
+  }, [nav]);
+
+  useEffect(() => {
+    const listener = CapApp.addListener('backButton', () => {
+      const currentNav = navRef.current;
+
+      // If NOT on a main tab, navigate back to the appropriate parent
+      if (!TAB_IDS.includes(currentNav.screen)) {
+        if (currentNav.screen === 'student-detail') {
+          handleBack('class-detail', { classId: currentNav.params.classId });
+        } else {
+          handleBack('classes', {});
+        }
+        backPressCount.current = 0;
+      } else {
+        // If on a main tab, press back again to exit
+        if (backPressCount.current >= 1) {
+          setShowExitConfirm(true);
+        } else {
+          backPressCount.current += 1;
+          setTimeout(() => { backPressCount.current = 0; }, 2000);
+          // Optional: Could show a toast here "Press back again to exit"
+        }
+      }
+    });
+    return () => { listener.then(l => l.remove()); };
+  }, [handleBack]);
 
   // ── If not logged in, show Login ────────────────────────────────────────────
   if (!currentUser) {
@@ -238,6 +274,19 @@ export default function App() {
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn btn-secondary btn-full" onClick={() => setShowLogoutConfirm(false)}>Hayır</button>
             <button className="btn btn-danger btn-full" onClick={handleLogout}>Evet, Çıkış Yap</button>
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* Exit App confirm */}
+      {showExitConfirm && (
+        <BottomSheet title="Uygulamadan Çık" onClose={() => setShowExitConfirm(false)}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+            Uygulamadan çıkmak istediğinize emin misiniz?
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-secondary btn-full" onClick={() => setShowExitConfirm(false)}>Hayır</button>
+            <button className="btn btn-danger btn-full" onClick={() => CapApp.exitApp()}>Evet, Çık</button>
           </div>
         </BottomSheet>
       )}

@@ -65,11 +65,21 @@ export function StudentAvatar({ student, size = 46 }) {
 }
 
 export function ClassAvatar({ cls }) {
-    const colorIndex = CLASS_COLORS.indexOf(cls.color);
     const bg = cls.color || CLASS_COLORS[0];
+    const label = cls.ageGroup || 'KIDS';
+
+    // Adjust font size based on text length to fit in the box
+    const fontSize = label.length > 5 ? 10 : 12;
+
     return (
-        <div className="class-card__avatar" style={{ background: `linear-gradient(135deg, ${bg}cc, ${bg}77)` }}>
-            {getInitials(cls.name)}
+        <div className="class-card__avatar" style={{
+            background: `linear-gradient(135deg, ${bg}cc, ${bg}77)`,
+            fontSize: fontSize,
+            fontWeight: 800,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase'
+        }}>
+            {label}
         </div>
     );
 }

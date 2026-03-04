@@ -312,6 +312,31 @@ export function useFirebaseStore() {
             updateDoc(doc(db, C.students, studentId), { homework: updated }).catch(console.error);
         },
 
+        // Delete a homework assignment from ALL students in a class
+        deleteHomeworkAssignment: async ({ classId, hwId }) => {
+            dispatch({ type: 'OPT_DELETE_HOMEWORK', payload: { classId, hwId } }); // Optimistic delete
+            const classStudents = state.students.filter(s => s.classId === classId);
+            if (!classStudents.length) return;
+            const batch = writeBatch(db);
+            classStudents.forEach(s => {
+                const hwList = s.homework || [];
+                if (hwList.some(hw => hw.id === hwId)) {
+                    batch.update(doc(db, C.students, s.id), { homework: hwList.filter(hw => hw.id !== hwId) });
+                }
+            });
+            batch.commit().catch(console.error);
+        },
+
+        // Delete a homework assignment from a single student
+        deleteStudentHomework: async ({ studentId, hwId }) => {
+            const student = state.students.find(s => s.id === studentId);
+            if (!student) return;
+            const hwList = student.homework || [];
+            const updated = hwList.filter(hw => hw.id !== hwId);
+            dispatch({ type: 'OPT_UPDATE_STUDENT', payload: { id: studentId, homework: updated } });
+            updateDoc(doc(db, C.students, studentId), { homework: updated }).catch(console.error);
+        },
+
         updateHomeworkStatus: ({ studentId, hwId, status }) => {
             dispatch({ type: 'OPT_UPDATE_HW_STATUS', payload: { studentId, hwId, status } });
             const student = state.students.find(s => s.id === studentId);

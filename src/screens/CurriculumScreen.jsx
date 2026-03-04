@@ -11,7 +11,7 @@ function getFileCategory(name = '') {
     return 'other';
 }
 
-export default function CurriculumScreen({ state, actions }) {
+export default function CurriculumScreen({ state, actions, onNavigate, currentUser }) {
     const [showEdit, setShowEdit] = useState(false);
     const [editClassId, setEditClassId] = useState(null);
     const [unit, setUnit] = useState('');
@@ -22,6 +22,7 @@ export default function CurriculumScreen({ state, actions }) {
     const [hwPdfFile, setHwPdfFile] = useState(null);
     const [hwPdfDataUrl, setHwPdfDataUrl] = useState(null);
     const [showDocViewer, setShowDocViewer] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const currFileInputRef = useRef(null);
     const hwFileInputRef = useRef(null);
@@ -197,20 +198,24 @@ export default function CurriculumScreen({ state, actions }) {
                                 📄 General Curriculum
                             </button>
                         )}
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => currFileInputRef.current?.click()}
-                            style={{ flex: gc ? 0 : 1, minWidth: gc ? 'auto' : undefined }}
-                        >
-                            {gc ? '🔄 Change' : '⬆ Upload Curriculum'}
-                        </button>
-                        <input
-                            ref={currFileInputRef}
-                            type="file"
-                            accept=".pdf,.xlsx,.xls,.csv"
-                            style={{ display: 'none' }}
-                            onChange={handleCurriculumFileChange}
-                        />
+                        {currentUser?.isAdmin && (
+                            <>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => currFileInputRef.current?.click()}
+                                    style={{ flex: gc ? 0 : 1, minWidth: gc ? 'auto' : undefined }}
+                                >
+                                    {gc ? '🔄 Change' : '⬆ Upload Curriculum'}
+                                </button>
+                                <input
+                                    ref={currFileInputRef}
+                                    type="file"
+                                    accept=".pdf,.xlsx,.xls,.csv"
+                                    style={{ display: 'none' }}
+                                    onChange={handleCurriculumFileChange}
+                                />
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -228,39 +233,54 @@ export default function CurriculumScreen({ state, actions }) {
                 <EmptyState icon="📋" title="No classes yet" desc="Create classes first to track their curriculum." />
             ) : (
                 <>
-                    <div className="section-title mb-16">Class Progress</div>
-                    <div className="curriculum-board">
-                        {state.classes.map((cls, idx) => {
-                            const curr = getCurriculum(cls.id);
-                            const color = cls.color || CLASS_COLOR_ACCENTS[idx % CLASS_COLOR_ACCENTS.length];
+                    <div className="section-title mb-16">Class Progresses</div>
 
-                            return (
-                                <div key={cls.id} className="curriculum-row">
-                                    <div className="curriculum-row__class-color" style={{ background: color }} />
-                                    <div className="curriculum-row__info">
-                                        <div className="curriculum-row__class-name">{cls.name}</div>
-                                        <div className="curriculum-row__topic">
-                                            {curr?.topic
-                                                ? `📖 ${curr.topic}`
-                                                : <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No topic set yet</span>
-                                            }
-                                        </div>
-                                        {curr?.updatedAt && (
-                                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
-                                                Updated: {formatDate(curr.updatedAt)}
+                    {/* Filter Input */}
+                    <div className="form-group">
+                        <input
+                            type="text"
+                            className="form-input"
+                            placeholder="🔍 Search classes..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            style={{ marginBottom: 12, padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.04)' }}
+                        />
+                    </div>
+
+                    <div className="curriculum-board">
+                        {state.classes
+                            .filter(cls => cls.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                            .map((cls, idx) => {
+                                const curr = getCurriculum(cls.id);
+                                const color = cls.color || CLASS_COLOR_ACCENTS[idx % CLASS_COLOR_ACCENTS.length];
+
+                                return (
+                                    <div key={cls.id} className="curriculum-row" onClick={() => onNavigate('class-detail', { classId: cls.id })} style={{ cursor: 'pointer' }}>
+                                        <div className="curriculum-row__class-color" style={{ background: color }} />
+                                        <div className="curriculum-row__info">
+                                            <div className="curriculum-row__class-name">{cls.name}</div>
+                                            <div className="curriculum-row__topic">
+                                                {curr?.topic
+                                                    ? `📖 ${curr.topic}`
+                                                    : <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No topic set yet</span>
+                                                }
                                             </div>
+                                            {curr?.updatedAt && (
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+                                                    Updated: {formatDate(curr.updatedAt)}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {curr?.unit && (
+                                            <div className="curriculum-row__unit">{curr.unit}</div>
                                         )}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                                            <button className="btn btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); openEdit(cls.id); }} title="Set curriculum topic">✏️</button>
+                                            <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); openAssignHw(cls.id); }} title="Assign homework">📚</button>
+                                        </div>
                                     </div>
-                                    {curr?.unit && (
-                                        <div className="curriculum-row__unit">{curr.unit}</div>
-                                    )}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                                        <button className="btn btn-secondary btn-sm" onClick={() => openEdit(cls.id)} title="Set curriculum topic">✏️</button>
-                                        <button className="btn btn-primary btn-sm" onClick={() => openAssignHw(cls.id)} title="Assign homework">📚</button>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
                     </div>
 
                     {/* How-to Guide */}

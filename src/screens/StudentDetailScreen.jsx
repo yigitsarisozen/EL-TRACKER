@@ -19,6 +19,7 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
     const [ratingNote, setRatingNote] = useState('');
     const [comment, setComment] = useState('');
     const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+    const [showDeleteHwId, setShowDeleteHwId] = useState(null);
     const [viewPhoto, setViewPhoto] = useState(null);
     const [showAssignHw, setShowAssignHw] = useState(false);
     const [hwTitle, setHwTitle] = useState('');
@@ -121,8 +122,23 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
 
     const TABS = ['overview', 'homework', 'comments', 'ratings'];
 
+    const swipeRef = useRef({ startX: 0, startY: 0 });
+    const handleTouchStart = (e) => {
+        swipeRef.current.startX = e.touches[0].clientX;
+        swipeRef.current.startY = e.touches[0].clientY;
+    };
+    const handleTouchEnd = (e) => {
+        const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
+        const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
+        if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+        const idx = TABS.indexOf(activeTab);
+        if (dx < 0 && idx < TABS.length - 1) setActiveTab(TABS[idx + 1]); // swipe left
+        else if (dx > 0 && idx > 0) setActiveTab(TABS[idx - 1]); // swipe right
+    };
+
     return (
-        <div className="page-enter">
+        <div className="page-enter" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
             {/* Student Header */}
             <div style={{ background: 'var(--bg-secondary)', padding: '20px 16px', borderBottom: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -286,7 +302,16 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
                                                 </div>
                                             )}
                                         </div>
-                                        <HwBadge status={hw.status} onClick={() => handleCycleHwStatus(hw.id, hw.status)} />
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                                            <HwBadge status={hw.status} onClick={() => handleCycleHwStatus(hw.id, hw.status)} />
+                                            <button
+                                                onClick={() => setShowDeleteHwId(hw.id)}
+                                                style={{
+                                                    background: 'rgba(247,106,124,0.12)', border: 'none', borderRadius: 6,
+                                                    color: 'var(--accent-rose)', fontSize: 13, padding: '4px 8px', cursor: 'pointer'
+                                                }}
+                                            >🗑 Sil</button>
+                                        </div>
                                     </div>
                                     {/* Tap to cycle help text */}
                                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Tap status badge to cycle: Pending → Done → Absent → Failed</div>
@@ -472,6 +497,26 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
                         <button className="btn btn-primary btn-full" onClick={handleAssignHwToStudent} disabled={!hwTitle.trim()}>
                             Assign
                         </button>
+                    </div>
+                </BottomSheet>
+            )}
+
+            {/* ── Delete Homework Sheet ───────── */}
+            {showDeleteHwId && (
+                <BottomSheet title="Delete Homework" onClose={() => setShowDeleteHwId(null)}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+                        This homework might be assigned to the whole class. Do you want to remove it for <strong style={{ color: 'var(--text-primary)' }}>this student only</strong>, or for <strong style={{ color: 'var(--accent-rose)' }}>all students in the class</strong>?
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <button className="btn btn-secondary" onClick={() => {
+                            actions.deleteStudentHomework({ studentId, hwId: showDeleteHwId });
+                            setShowDeleteHwId(null);
+                        }}>🗑 Only this student</button>
+                        <button className="btn btn-danger" onClick={() => {
+                            actions.deleteHomeworkAssignment({ classId: student.classId, hwId: showDeleteHwId });
+                            setShowDeleteHwId(null);
+                        }}>⚠️ Entire Class</button>
+                        <button className="btn" style={{ background: 'transparent', color: 'var(--text-muted)', marginTop: 8 }} onClick={() => setShowDeleteHwId(null)}>Cancel</button>
                     </div>
                 </BottomSheet>
             )}

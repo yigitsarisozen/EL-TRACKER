@@ -10,11 +10,35 @@ const CLASS_COLORS = [
 // ─── Reusable Components ────────────────────────────────────────────────────
 
 export function BottomSheet({ title, onClose, children }) {
+    // Intercept hardware back button to close the sheet
+    React.useEffect(() => {
+        const handler = (e) => {
+            e.preventDefault();
+            onClose();
+        };
+        window.addEventListener('hardwareBackPress', handler);
+        return () => window.removeEventListener('hardwareBackPress', handler);
+    }, [onClose]);
+
     return (
         <div className="overlay" onClick={e => { if (e.target.classList.contains('overlay')) onClose(); }}>
             <div className="bottom-sheet">
                 <div className="sheet-handle" />
-                {title && <h2 className="sheet-title">{title}</h2>}
+                <div style={{ position: 'relative', minHeight: 40, marginBottom: 16 }}>
+                    {title && <h2 className="sheet-title" style={{ margin: 0, paddingRight: 40, paddingTop: 6 }}>{title}</h2>}
+                    <button
+                        onClick={onClose}
+                        style={{
+                            position: 'absolute', top: 0, right: 0,
+                            background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%',
+                            width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 18, lineHeight: 1
+                        }}
+                        title="Close"
+                    >
+                        ✕
+                    </button>
+                </div>
                 {children}
             </div>
         </div>

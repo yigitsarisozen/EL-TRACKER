@@ -66,12 +66,16 @@ export default function App() {
     setShowLogoutConfirm(false);
   };
 
-  // ── Navigation state ────────────────────────────────────────────────────────
-  const [nav, setNav] = useState({ screen: 'classes', params: {} });
+  // ── Navigation State (History Stack) ──────────────────────────────────────
+  // Store the full history so back always goes to the previous screen
+  const [history, setHistory] = useState([{ screen: 'classes', params: {} }]);
   const [activeTab, setActiveTab] = useState('classes');
 
+  // The current active screen is always the last item in the history stack
+  const nav = history[history.length - 1];
+
   const navigate = useCallback((screen, params = {}) => {
-    setNav({ screen, params });
+    setHistory(prev => [...prev, { screen, params }]);
     if (['classes', 'curriculum', 'trash'].includes(screen)) {
       setActiveTab(screen);
     }
@@ -79,12 +83,24 @@ export default function App() {
 
   const handleTabPress = (tabId) => {
     setActiveTab(tabId);
-    setNav({ screen: tabId, params: {} });
+    // When pressing a bottom tab, we reset the history stack to just that tab
+    // to prevent infinitely deep stacks.
+    setHistory([{ screen: tabId, params: {} }]);
   };
 
-  const handleBack = (to, params = {}) => {
-    navigate(to, params);
-  };
+  const handleBack = useCallback(() => {
+    setHistory(prev => {
+      if (prev.length > 1) {
+        const newHistory = prev.slice(0, -1);
+        const newNav = newHistory[newHistory.length - 1];
+        if (['classes', 'curriculum', 'trash'].includes(newNav.screen)) {
+          setActiveTab(newNav.screen);
+        }
+        return newHistory;
+      }
+      return prev;
+    });
+  }, []);
 
   // ── Swipe between tabs ────────────────────────────────────────────────────
   const swipeRef = useRef({ startX: 0, startY: 0 });
@@ -113,13 +129,13 @@ export default function App() {
   };
 
   // ── Android Back Button ───────────────────────────────────────────────────
-  const navRef = useRef(nav);
+  const historyRef = useRef(history);
   const backPressCount = useRef(0);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   useEffect(() => {
-    navRef.current = nav;
-  }, [nav]);
+    historyRef.current = history;
+  }, [history]);
 
   useEffect(() => {
     const listener = CapApp.addListener('backButton', () => {
@@ -128,14 +144,14 @@ export default function App() {
       window.dispatchEvent(event);
       if (event.defaultPrevented) return; // A modal handled it!
 
-      const currentNav = navRef.current;
+      const currentHistory = historyRef.current;
 
-      // 2. If NOT on a main tab, navigate back to 'classes' (main menu)
-      if (!TAB_IDS.includes(currentNav.screen)) {
-        handleBack('classes', {});
+      // 2. If there is history to go back to, pop it
+      if (currentHistory.length > 1) {
+        handleBack();
         backPressCount.current = 0;
       } else {
-        // 3. If on main tab, press back again to exit
+        // 3. If at the root of the stack (main tab), press back again to exit
         if (backPressCount.current >= 1) {
           setShowExitConfirm(true);
         } else {
@@ -198,7 +214,7 @@ export default function App() {
       <nav className="top-nav">
         <div className="top-nav__left">
           {showBack && (
-            <button className="top-nav__back-btn" onClick={() => handleBack(backTo, backParams)}>‹</button>
+            <button className="top-nav__back-btn" onClick={() => handleBack()}>‹</button>
           )}
           <div>
             <div className="top-nav__title">{title}</div>

@@ -16,9 +16,13 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
     const [showRenameStudent, setShowRenameStudent] = useState(null); // student id
     const [studentName, setStudentName] = useState('');
     const [newClassName, setNewClassName] = useState('');
-    const [newStudentName, setNewStudentName] = useState('');
     const [activeTab, setActiveTab] = useState('students');
     const [comment, setComment] = useState('');
+
+    const [showAssignHw, setShowAssignHw] = useState(false);
+    const [hwTitle, setHwTitle] = useState('');
+    const [hwPdfFile, setHwPdfFile] = useState(null);
+    const [hwPdfDataUrl, setHwPdfDataUrl] = useState(null);
 
     if (!cls) return <div className="screen-pad"><p className="text-muted">Class not found.</p></div>;
 
@@ -61,6 +65,29 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
     const handleDeleteClass = () => {
         actions.deleteClass(classId);
         onNavigate('classes');
+    };
+
+    const handleHwFileSelected = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setHwPdfFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setHwPdfDataUrl(reader.result);
+        reader.readAsDataURL(file);
+    };
+
+    const handleAddHomework = () => {
+        if (!hwTitle.trim()) return;
+        actions.addHomeworkAssignment({
+            classId: classId,
+            title: hwTitle.trim(),
+            pdfName: hwPdfFile ? hwPdfFile.name : null,
+            pdfDataUrl: hwPdfDataUrl
+        });
+        setHwTitle('');
+        setHwPdfFile(null);
+        setHwPdfDataUrl(null);
+        setShowAssignHw(false);
     };
 
     const formatDate = (iso) => {
@@ -215,7 +242,10 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
                 {/* Homework Tab */}
                 {activeTab === 'homework' && (
                     <>
-                        <div className="section-title mb-16">Assigned Homeworks</div>
+                        <div className="section-header">
+                            <span className="section-title">Assigned Homeworks</span>
+                            <button className="btn btn-primary btn-sm" onClick={() => setShowAssignHw(true)}>+ Assign</button>
+                        </div>
                         {classHomeworks.length === 0 ? (
                             <EmptyState icon="📚" title="No homework yet" desc="Class-wide assignments will appear here." />
                         ) : (
@@ -373,6 +403,35 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button className="btn btn-secondary btn-full" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
                         <button className="btn btn-danger btn-full" onClick={handleDeleteClass}>Move to Trash</button>
+                    </div>
+                </BottomSheet>
+            )}
+
+            {/* ── Assign Class Homework Sheet ── */}
+            {showAssignHw && (
+                <BottomSheet title="Assign Class Homework" onClose={() => setShowAssignHw(false)}>
+                    <div className="form-group">
+                        <label className="form-label">Homework Title</label>
+                        <input
+                            className="form-input"
+                            placeholder="e.g. Unit 1 Worksheet"
+                            value={hwTitle}
+                            onChange={e => setHwTitle(e.target.value)}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Attach PDF (Optional)</label>
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={handleHwFileSelected}
+                            style={{ padding: '8px 0', fontSize: 13, color: 'var(--text-secondary)' }}
+                        />
+                        {hwPdfFile && <div style={{ fontSize: 11, color: 'var(--accent-blue)', marginTop: 4 }}>✓ {hwPdfFile.name} attached</div>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                        <button className="btn btn-secondary btn-full" onClick={() => setShowAssignHw(false)}>Cancel</button>
+                        <button className="btn btn-primary btn-full" onClick={handleAddHomework}>Assign to Class</button>
                     </div>
                 </BottomSheet>
             )}

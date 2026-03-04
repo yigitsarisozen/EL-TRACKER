@@ -1,0 +1,6 @@
+{
+    "appId": "com.ys.eltracker",
+    "appName": "EL Tracker",
+    "webDir": "dist",
+    "bundledWebRuntime": false
+}

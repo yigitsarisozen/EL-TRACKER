@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">EL Tracker</string>
-    <string name="title_activity_main">EL Tracker</string>
+    <string name="app_name">Genç Akademi</string>
+    <string name="title_activity_main">Genç Akademi</string>
     <string name="package_name">com.ys.eltracker</string>
     <string name="custom_url_scheme">com.ys.eltracker</string>
 </resources>

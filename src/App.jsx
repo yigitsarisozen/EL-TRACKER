@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import './index.css';
 import { useFirebaseStore } from './firebase/useFirebaseStore';
 
+import LoginScreen from './screens/LoginScreen';
 import ClassesScreen from './screens/ClassesScreen';
 import ClassDetailScreen from './screens/ClassDetailScreen';
 import StudentDetailScreen from './screens/StudentDetailScreen';
@@ -18,7 +19,7 @@ const TABS = [
 // ─── Helper: screen title & back target ─────────────────────────────────────
 function getNavConfig(screen, params, state) {
   switch (screen) {
-    case 'classes': return { title: 'EL Tracker', showBack: false };
+    case 'classes': return { title: 'Genç Akademi', showBack: false };
     case 'curriculum': return { title: 'Curriculum', showBack: false };
     case 'trash': return { title: 'Trash', showBack: false };
     case 'class-detail': {
@@ -36,20 +37,37 @@ function getNavConfig(screen, params, state) {
         backParams: { classId: params.classId },
       };
     }
-    default: return { title: 'EL Tracker', showBack: false };
+    default: return { title: 'Genç Akademi', showBack: false };
   }
 }
 
 export default function App() {
   const { state, actions } = useFirebaseStore();
 
-  // Navigation state: { screen, params }
+  // ── Auth state ──────────────────────────────────────────────────────────────
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('ga_current_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    sessionStorage.setItem('ga_current_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    sessionStorage.removeItem('ga_current_user');
+  };
+
+  // ── Navigation state ────────────────────────────────────────────────────────
   const [nav, setNav] = useState({ screen: 'classes', params: {} });
   const [activeTab, setActiveTab] = useState('classes');
 
   const navigate = useCallback((screen, params = {}) => {
     setNav({ screen, params });
-    // If it's a root tab screen, update active tab
     if (['classes', 'curriculum', 'trash'].includes(screen)) {
       setActiveTab(screen);
     }
@@ -64,11 +82,16 @@ export default function App() {
     navigate(to, params);
   };
 
+  // ── If not logged in, show Login ────────────────────────────────────────────
+  if (!currentUser) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   const { title, subtitle, showBack, backTo, backParams } = getNavConfig(nav.screen, nav.params, state);
 
   // ── Render Screen ──────────────────────────────────────────────────────────
   const renderScreen = () => {
-    const props = { state, actions, onNavigate: navigate, params: nav.params };
+    const props = { state, actions, onNavigate: navigate, params: nav.params, currentUser };
     switch (nav.screen) {
       case 'classes': return <ClassesScreen       {...props} />;
       case 'class-detail': return <ClassDetailScreen    {...props} />;
@@ -96,7 +119,7 @@ export default function App() {
             background: 'linear-gradient(135deg, #7c6af7, #4facfe)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 26, fontWeight: 800, color: 'white',
-          }}>EL</div>
+          }}>GA</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)' }}>Connecting to server…</div>
           <div style={{
             width: 40, height: 3, borderRadius: 2,
@@ -117,13 +140,27 @@ export default function App() {
           </div>
         </div>
         <div className="top-nav__actions">
-          {/* Logo mark */}
+          {/* Current user + logout */}
           <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: 'linear-gradient(135deg, #7c6af7, #4facfe)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 800, color: 'white', letterSpacing: -1,
-          }}>EL</div>
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
+              padding: '4px 8px', borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)',
+            }}>{currentUser.displayName}</span>
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              style={{
+                width: 34, height: 34, borderRadius: 10,
+                background: 'rgba(247,106,124,0.12)',
+                border: 'none', color: 'var(--accent-rose)',
+                fontSize: 14, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', cursor: 'pointer',
+              }}
+            >⏻</button>
+          </div>
         </div>
       </nav>
 

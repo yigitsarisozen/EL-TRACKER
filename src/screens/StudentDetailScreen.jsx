@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react';
 import { BottomSheet, StudentAvatar, StarRating, HwBadge, PerfBadge, EmptyState } from '../components/Shared';
 import { calcPerformance, PERF_LABELS } from '../store/useStore';
 import CommentInput from '../components/CommentInput';
+import PhotoViewer from '../components/PhotoViewer';
 
-export default function StudentDetailScreen({ state, actions, onNavigate, params }) {
+export default function StudentDetailScreen({ state, actions, onNavigate, params, currentUser }) {
     const { studentId, classId } = params;
     const student = state.students.find(s => s.id === studentId);
     const cls = state.classes.find(c => c.id === (classId || student?.classId));
@@ -18,6 +19,7 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
     const [ratingNote, setRatingNote] = useState('');
     const [comment, setComment] = useState('');
     const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+    const [viewPhoto, setViewPhoto] = useState(null);
     const photoInputRef = useRef(null);
 
     if (!student) return <div className="screen-pad"><p className="text-muted">Student not found.</p></div>;
@@ -39,7 +41,12 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
 
     const handleAddComment = (text, type, mediaPath) => {
         if (!text && !mediaPath) return;
-        actions.addStudentComment({ studentId, text, commentType: type, mediaPath });
+        actions.addStudentComment({ studentId, text, commentType: type, mediaPath, addedBy: currentUser?.displayName || 'Unknown' });
+    };
+
+    const handleDeleteComment = (commentId) => {
+        if (!confirm('Delete this note?')) return;
+        actions.deleteStudentComment({ studentId, commentId });
     };
 
     const handleAddRating = () => {
@@ -260,13 +267,31 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
                         {(student.comments || []).slice().reverse().map(c => (
                             <div key={c.id} className="comment-card">
                                 <div className="comment-card__header">
-                                    <span className="comment-card__date">{formatTime(c.createdAt)}</span>
-                                    <span className={`comment-card__type ${c.type}`}>
-                                        {c.type === 'voice' ? '🎙 Voice' : c.type === 'photo' ? '📸 Photo' : '💬 Note'}
-                                    </span>
+                                    <div>
+                                        <span className="comment-card__date">{formatTime(c.createdAt)}</span>
+                                        {c.addedBy && <span style={{ fontSize: 11, color: 'var(--accent-purple-light)', marginLeft: 8 }}>by {c.addedBy}</span>}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span className={`comment-card__type ${c.type}`}>
+                                            {c.type === 'voice' ? '🎙 Voice' : c.type === 'photo' ? '📸 Photo' : '💬 Note'}
+                                        </span>
+                                        <button
+                                            onClick={() => handleDeleteComment(c.id)}
+                                            title="Delete note"
+                                            style={{
+                                                background: 'rgba(247,106,124,0.12)', border: 'none', borderRadius: 6,
+                                                color: 'var(--accent-rose)', fontSize: 12, padding: '3px 7px',
+                                                cursor: 'pointer', lineHeight: 1,
+                                            }}
+                                        >🗑</button>
+                                    </div>
                                 </div>
                                 {c.mediaPath && c.type === 'photo' && (
-                                    <img src={c.mediaPath} alt="attachment" style={{ width: '100%', borderRadius: 8, marginBottom: 8, maxHeight: 200, objectFit: 'cover' }} />
+                                    <img
+                                        src={c.mediaPath} alt="attachment"
+                                        style={{ width: '100%', borderRadius: 8, marginBottom: 8, maxHeight: 200, objectFit: 'cover', cursor: 'pointer' }}
+                                        onClick={() => setViewPhoto(c.mediaPath)}
+                                    />
                                 )}
                                 {c.mediaPath && c.type === 'voice' && (
                                     <audio src={c.mediaPath} controls style={{ width: '100%', marginBottom: 8, height: 36 }} />
@@ -367,6 +392,8 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
                     </div>
                 </BottomSheet>
             )}
+
+            {viewPhoto && <PhotoViewer src={viewPhoto} onClose={() => setViewPhoto(null)} />}
         </div>
     );
 }

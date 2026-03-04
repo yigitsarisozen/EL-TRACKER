@@ -7,7 +7,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>EL Tracker</string>
+        <string>Genç Akademi</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Voice notes require microphone access</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos for student notes</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Attach photos from your gallery</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

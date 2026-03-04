@@ -21,6 +21,7 @@ export default function CurriculumScreen({ state, actions }) {
     const [hwTitle, setHwTitle] = useState('');
     const [hwPdfFile, setHwPdfFile] = useState(null);
     const [hwPdfDataUrl, setHwPdfDataUrl] = useState(null);
+    const [showDocViewer, setShowDocViewer] = useState(false);
 
     const currFileInputRef = useRef(null);
     const hwFileInputRef = useRef(null);
@@ -48,11 +49,21 @@ export default function CurriculumScreen({ state, actions }) {
 
     const handleOpenCurriculum = () => {
         if (!gc) return;
-        // Both PDF and Excel: trigger a download (works reliably in all webviews)
-        const a = document.createElement('a');
-        a.href = gc.dataUrl;
-        a.download = gc.name;
-        a.click();
+        // If URL is a Firebase Storage URL (https://...), use Google Docs Viewer
+        if (gc.dataUrl && gc.dataUrl.startsWith('https://')) {
+            setShowDocViewer(true);
+        } else {
+            // Fallback: trigger download for data: URLs
+            const a = document.createElement('a');
+            a.href = gc.dataUrl;
+            a.download = gc.name;
+            a.click();
+        }
+    };
+
+    const getGoogleViewerUrl = () => {
+        if (!gc?.dataUrl) return '';
+        return `https://docs.google.com/viewer?url=${encodeURIComponent(gc.dataUrl)}&embedded=true`;
     };
 
     // ── Class curriculum editing ────────────────────────────────────────────
@@ -183,7 +194,7 @@ export default function CurriculumScreen({ state, actions }) {
                                 onClick={handleOpenCurriculum}
                                 style={{ flex: 1, maxWidth: 140 }}
                             >
-                                ⬇ İndir
+                                👁 Görüntüle
                             </button>
                         )}
                         <button
@@ -358,6 +369,49 @@ export default function CurriculumScreen({ state, actions }) {
                         </button>
                     </div>
                 </BottomSheet>
+            )}
+
+            {/* Google Docs Viewer Overlay */}
+            {showDocViewer && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 400,
+                    background: 'rgba(0,0,0,0.92)',
+                    display: 'flex', flexDirection: 'column',
+                }}>
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '12px 16px', background: 'rgba(30,30,42,0.95)',
+                        borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+                            📄 {gc?.name || 'Document'}
+                        </span>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <a
+                                href={gc?.dataUrl}
+                                download={gc?.name}
+                                style={{
+                                    background: 'rgba(79,172,254,0.15)', border: 'none', borderRadius: 8,
+                                    color: 'var(--accent-blue)', fontSize: 12, padding: '6px 12px',
+                                    cursor: 'pointer', fontWeight: 600, textDecoration: 'none',
+                                }}
+                            >⬇ İndir</a>
+                            <button
+                                onClick={() => setShowDocViewer(false)}
+                                style={{
+                                    background: 'rgba(247,106,124,0.15)', border: 'none', borderRadius: 8,
+                                    color: 'var(--accent-rose)', fontSize: 14, padding: '6px 14px',
+                                    cursor: 'pointer', fontWeight: 700,
+                                }}
+                            >✕</button>
+                        </div>
+                    </div>
+                    <iframe
+                        src={getGoogleViewerUrl()}
+                        style={{ flex: 1, border: 'none', width: '100%', background: 'white' }}
+                        title="Document Viewer"
+                    />
+                </div>
             )}
         </div>
     );

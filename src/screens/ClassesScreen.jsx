@@ -18,9 +18,9 @@ export default function ClassesScreen({ state, actions, onNavigate }) {
         <div className="screen-pad page-enter">
             {/* Hero Banner */}
             <div className="hero-banner">
-                <div className="hero-banner__label">EL Tracker</div>
-                <div className="hero-banner__title">My Classes</div>
-                <div className="hero-banner__subtitle">Manage your groups and students</div>
+                <div className="hero-banner__label">Genç Akademi</div>
+                <div className="hero-banner__title">English Curriculum Tracker</div>
+                <div className="hero-banner__subtitle">Track classes, students & progress</div>
             </div>
 
             {/* Stats */}

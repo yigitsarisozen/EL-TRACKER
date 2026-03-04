@@ -63,12 +63,22 @@ function reducer(state, action) {
             return { ...state, students: state.students.filter(s => s.id !== action.payload) };
         case 'OPT_ADD_CLASS_COMMENT':
             return { ...state, classComments: [...state.classComments, action.payload] };
+        case 'OPT_DELETE_CLASS_COMMENT':
+            return { ...state, classComments: state.classComments.filter(c => c.id !== action.payload) };
         case 'OPT_ADD_STUDENT_COMMENT':
             return {
                 ...state,
                 students: state.students.map(s =>
                     s.id !== action.payload.studentId ? s
                         : { ...s, comments: [...(s.comments || []), action.payload.comment] }
+                ),
+            };
+        case 'OPT_DELETE_STUDENT_COMMENT':
+            return {
+                ...state,
+                students: state.students.map(s =>
+                    s.id !== action.payload.studentId ? s
+                        : { ...s, comments: (s.comments || []).filter(c => c.id !== action.payload.commentId) }
                 ),
             };
         case 'OPT_ADD_RATING':
@@ -223,7 +233,7 @@ export function useFirebaseStore() {
         },
 
         // ── Comments ─────────────────────────────────────────────────────────
-        addClassComment: async ({ classId, text, commentType, mediaPath }) => {
+        addClassComment: async ({ classId, text, commentType, mediaPath, addedBy }) => {
             const id = uid();
             let mediaUrl = null;
             if (mediaPath && mediaPath.startsWith('data:')) {
@@ -232,12 +242,17 @@ export function useFirebaseStore() {
             } else {
                 mediaUrl = mediaPath || null;
             }
-            const comment = { id, classId, text: text || '', type: commentType || 'text', mediaPath: mediaUrl, createdAt: now() };
+            const comment = { id, classId, text: text || '', type: commentType || 'text', mediaPath: mediaUrl, addedBy: addedBy || null, createdAt: now() };
             dispatch({ type: 'OPT_ADD_CLASS_COMMENT', payload: comment });
             setDoc(doc(db, C.classComments, id), comment).catch(console.error);
         },
 
-        addStudentComment: async ({ studentId, text, commentType, mediaPath }) => {
+        deleteClassComment: (commentId) => {
+            dispatch({ type: 'OPT_DELETE_CLASS_COMMENT', payload: commentId });
+            deleteDoc(doc(db, C.classComments, commentId)).catch(console.error);
+        },
+
+        addStudentComment: async ({ studentId, text, commentType, mediaPath, addedBy }) => {
             const id = uid();
             let mediaUrl = null;
             if (mediaPath && mediaPath.startsWith('data:')) {
@@ -246,11 +261,19 @@ export function useFirebaseStore() {
             } else {
                 mediaUrl = mediaPath || null;
             }
-            const comment = { id, text: text || '', type: commentType || 'text', mediaPath: mediaUrl, createdAt: now() };
+            const comment = { id, text: text || '', type: commentType || 'text', mediaPath: mediaUrl, addedBy: addedBy || null, createdAt: now() };
             dispatch({ type: 'OPT_ADD_STUDENT_COMMENT', payload: { studentId, comment } });
             const student = state.students.find(s => s.id === studentId);
             if (!student) return;
             const updated = [...(student.comments || []), comment];
+            updateDoc(doc(db, C.students, studentId), { comments: updated }).catch(console.error);
+        },
+
+        deleteStudentComment: ({ studentId, commentId }) => {
+            dispatch({ type: 'OPT_DELETE_STUDENT_COMMENT', payload: { studentId, commentId } });
+            const student = state.students.find(s => s.id === studentId);
+            if (!student) return;
+            const updated = (student.comments || []).filter(c => c.id !== commentId);
             updateDoc(doc(db, C.students, studentId), { comments: updated }).catch(console.error);
         },
 

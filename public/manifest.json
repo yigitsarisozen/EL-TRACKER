@@ -1,7 +1,7 @@
 {
-  "name": "EL Tracker",
-  "short_name": "EL Tracker",
-  "description": "Progress tracking app for English Learner teachers",
+  "name": "Genç Akademi English Curriculum Tracker",
+  "short_name": "Genç Akademi",
+  "description": "English curriculum tracking app for teachers",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f0f14",

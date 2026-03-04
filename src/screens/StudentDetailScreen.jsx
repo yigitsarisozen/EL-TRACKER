@@ -143,7 +143,9 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
     const handleTouchEnd = (e) => {
         const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
         const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
-        if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+        // Less strict check: allows some vertical drift while swiping
+        if (Math.abs(dx) < 40 || Math.abs(dy) > 50) return;
 
         const idx = TABS.indexOf(activeTab);
         if (dx < 0 && idx < TABS.length - 1) setActiveTab(TABS[idx + 1]); // swipe left
@@ -151,7 +153,7 @@ export default function StudentDetailScreen({ state, actions, onNavigate, params
     };
 
     return (
-        <div className="page-enter" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="page-enter" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ touchAction: 'pan-y' }}>
             {/* Student Header */}
             <div style={{ background: 'var(--bg-secondary)', padding: '20px 16px', borderBottom: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

@@ -134,6 +134,12 @@ function reducer(state, action) {
                         : { ...s, homework: [...(s.homework || []), action.payload.hw] }
                 ),
             };
+        case 'OPT_RESTORE_TRASH':
+            return { ...state, trash: state.trash.filter(t => t.id !== action.payload) };
+        case 'OPT_PURGE_TRASH':
+            return { ...state, trash: state.trash.filter(t => t.id !== action.payload) };
+        case 'OPT_EMPTY_TRASH':
+            return { ...state, trash: [] };
         default:
             return state;
     }
@@ -284,7 +290,7 @@ export function useFirebaseStore() {
             if (pdfDataUrl && pdfDataUrl.startsWith('data:')) {
                 pdfUrl = await uploadIfBase64(pdfDataUrl, `homework/${hwId}.pdf`);
             }
-            const hw = { id: hwId, title, pdfName: pdfName || null, pdfDataUrl: pdfUrl, status: 'none', assignedAt: now() };
+            const hw = { id: hwId, title, pdfName: pdfName || null, pdfDataUrl: pdfUrl, status: 'none', assignedTo: 'class', assignedAt: now() };
             dispatch({ type: 'OPT_ADD_HOMEWORK', payload: { classId, hw } });
 
             const classStudents = state.students.filter(s => s.classId === classId);
@@ -303,10 +309,9 @@ export function useFirebaseStore() {
             if (pdfDataUrl && pdfDataUrl.startsWith('data:')) {
                 pdfUrl = await uploadIfBase64(pdfDataUrl, `homework/${hwId}.pdf`);
             }
-            const hw = { id: hwId, title, pdfName: pdfName || null, pdfDataUrl: pdfUrl, status: 'none', assignedAt: now() };
+            const hw = { id: hwId, title, pdfName: pdfName || null, pdfDataUrl: pdfUrl, status: 'none', assignedTo: 'student', assignedAt: now() };
             const student = state.students.find(s => s.id === studentId);
             if (!student) return;
-            dispatch({ type: 'OPT_ADD_STUDENT_COMMENT', payload: { studentId, comment: { id: 'hw_' + hwId, text: '', type: 'text', createdAt: now() } } });
             const updated = [...(student.homework || []), hw];
             dispatch({ type: 'OPT_UPDATE_STUDENT', payload: { id: studentId, homework: updated } });
             updateDoc(doc(db, C.students, studentId), { homework: updated }).catch(console.error);
@@ -395,6 +400,16 @@ export function useFirebaseStore() {
         purgeTrash: (trashId) => {
             dispatch({ type: 'OPT_PURGE_TRASH', payload: trashId });
             deleteDoc(doc(db, C.trash, trashId)).catch(console.error);
+        },
+
+        emptyTrash: async () => {
+            if (state.trash.length === 0) return;
+            const batch = writeBatch(db);
+            state.trash.forEach(item => {
+                batch.delete(doc(db, C.trash, item.id));
+            });
+            dispatch({ type: 'OPT_EMPTY_TRASH' });
+            batch.commit().catch(console.error);
         },
 
     }), [state]);

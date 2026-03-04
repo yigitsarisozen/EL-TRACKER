@@ -130,13 +130,9 @@ export default function App() {
 
       const currentNav = navRef.current;
 
-      // 2. If NOT on a main tab, navigate back
+      // 2. If NOT on a main tab, navigate back to 'classes' (main menu)
       if (!TAB_IDS.includes(currentNav.screen)) {
-        if (currentNav.screen === 'student-detail') {
-          handleBack('class-detail', { classId: currentNav.params.classId });
-        } else {
-          handleBack('classes', {});
-        }
+        handleBack('classes', {});
         backPressCount.current = 0;
       } else {
         // 3. If on main tab, press back again to exit

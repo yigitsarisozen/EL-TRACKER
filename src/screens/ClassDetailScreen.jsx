@@ -68,10 +68,14 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
         return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
-    // Aggregate unique homework assignments across the class
+    // Aggregate unique homework assignments across the class (only if not explicitly assigned to a single student)
     const classHomeworkMap = new Map();
     students.forEach(s => {
         (s.homework || []).forEach(hw => {
+            // If it's explicitly marked for a student, skip it.
+            // (Older assignments won't have this, so they'll still show up, but new ones won't.)
+            if (hw.assignedTo === 'student') return;
+
             if (!classHomeworkMap.has(hw.id)) {
                 classHomeworkMap.set(hw.id, hw);
             }
@@ -89,7 +93,7 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
         const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
         const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
 
-        // Strict horizontal wipe to avoid triggering during vertical scrolls
+        // Less strict horizontal wipe to avoid triggering during vertical scrolls but still easy to swipe
         if (Math.abs(dx) < 40 || Math.abs(dy) > 50) return;
 
         const idx = TABS.indexOf(activeTab);
@@ -111,7 +115,7 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
     };
 
     return (
-        <div className="page-enter" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="page-enter" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ touchAction: 'pan-y' }}>
             {/* Class Header */}
             <div style={{
                 background: `linear-gradient(135deg, ${cls.color}22, ${cls.color}11)`,

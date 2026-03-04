@@ -3,6 +3,7 @@ import { BottomSheet } from '../components/Shared';
 
 export default function TrashScreen({ state, actions }) {
     const [confirmPurge, setConfirmPurge] = useState(null); // item to purge
+    const [confirmEmpty, setConfirmEmpty] = useState(false); // empty all
 
     const formatDate = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -28,6 +29,11 @@ export default function TrashScreen({ state, actions }) {
         setConfirmPurge(null);
     };
 
+    const handleEmptyTrash = () => {
+        actions.emptyTrash();
+        setConfirmEmpty(false);
+    };
+
     return (
         <div className="screen-pad page-enter">
             <div className="hero-banner" style={{ background: 'linear-gradient(135deg, rgba(247,106,124,0.12), rgba(247,106,124,0.05))' }}>
@@ -44,7 +50,10 @@ export default function TrashScreen({ state, actions }) {
                 </div>
             ) : (
                 <>
-                    <div className="section-title mb-16">Deleted Items ({state.trash.length})</div>
+                    <div className="section-header">
+                        <span className="section-title">Deleted Items ({state.trash.length})</span>
+                        <button className="btn btn-danger btn-sm" onClick={() => setConfirmEmpty(true)}> Empty Trash</button>
+                    </div>
                     {state.trash.slice().reverse().map(item => {
                         const daysLeft = getDaysLeft(item.deletedAt);
                         return (
@@ -77,6 +86,20 @@ export default function TrashScreen({ state, actions }) {
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button className="btn btn-secondary btn-full" onClick={() => setConfirmPurge(null)}>Hayır</button>
                         <button className="btn btn-danger btn-full" onClick={handlePurge}>Evet, Sil</button>
+                    </div>
+                </BottomSheet>
+            )}
+
+            {/* Empty All Confirmation */}
+            {confirmEmpty && (
+                <BottomSheet title="Çöp Kutusunu Boşalt?" onClose={() => setConfirmEmpty(false)}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+                        Çöp kutusundaki <strong style={{ color: 'var(--text-primary)' }}>tüm öğeler</strong> kalıcı olarak silinecek.
+                        Bu işlem geri alınamaz.
+                    </p>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn btn-secondary btn-full" onClick={() => setConfirmEmpty(false)}>İptal</button>
+                        <button className="btn btn-danger btn-full" onClick={handleEmptyTrash}>Tümünü Sil</button>
                     </div>
                 </BottomSheet>
             )}

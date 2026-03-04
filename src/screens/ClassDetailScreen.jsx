@@ -62,6 +62,11 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
         actions.deleteClassComment(commentId);
     };
 
+    const handleDeleteClassHomework = (hwId) => {
+        if (!confirm('Are you sure you want to delete this class homework? It will be removed from all students.')) return;
+        actions.deleteHomeworkAssignment({ classId, hwId });
+    };
+
     const handleDeleteClass = () => {
         actions.deleteClass(classId);
         onNavigate('classes');
@@ -253,8 +258,20 @@ export default function ClassDetailScreen({ state, actions, onNavigate, params, 
                                 <div key={hw.id} style={{
                                     background: 'var(--bg-card)', border: '1px solid var(--border-color)',
                                     borderRadius: 'var(--border-radius)', padding: '16px', marginBottom: 12,
+                                    position: 'relative'
                                 }}>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 6 }}>{hw.title}</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                                        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>{hw.title}</div>
+                                        <button
+                                            onClick={() => handleDeleteClassHomework(hw.id)}
+                                            style={{
+                                                background: 'rgba(247,106,124,0.12)', border: 'none', borderRadius: 6,
+                                                color: 'var(--accent-rose)', fontSize: 12, padding: '3px 7px',
+                                                cursor: 'pointer', lineHeight: 1,
+                                            }}
+                                            title="Delete Homework"
+                                        >🗑</button>
+                                    </div>
                                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: hw.pdfName ? 12 : 0 }}>Assigned: {formatDate(hw.assignedAt)}</div>
 
                                     {hw.pdfName && (

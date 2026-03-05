@@ -19,29 +19,36 @@ export default function DocumentsScreen({ state, actions }) {
     };
 
     const handleFileChange = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file || !uploadingCategory) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0 || !uploadingCategory) return;
 
-        // Check if it's a PDF
-        if (file.type !== 'application/pdf') {
-            alert('Please select a PDF file.');
+        // Check if they are all PDFs
+        const invalidFiles = files.filter(f => f.type !== 'application/pdf');
+        if (invalidFiles.length > 0) {
+            alert('Please select only PDF files.');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const dataUrl = event.target.result;
-            if (dataUrl) {
-                // Show loading state implicitly or use a toast
-                await actions.uploadDocument({
-                    category: uploadingCategory,
-                    name: file.name,
-                    dataUrl: dataUrl
-                });
-                setUploadingCategory(null);
-            }
-        };
-        reader.readAsDataURL(file);
+        // Process all files concurrently
+        await Promise.all(files.map(file => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const dataUrl = event.target.result;
+                    if (dataUrl) {
+                        await actions.uploadDocument({
+                            category: uploadingCategory,
+                            name: file.name,
+                            dataUrl: dataUrl
+                        });
+                    }
+                    resolve();
+                };
+                reader.readAsDataURL(file);
+            });
+        }));
+
+        setUploadingCategory(null);
         // Reset input
         e.target.value = null;
     };
@@ -60,6 +67,7 @@ export default function DocumentsScreen({ state, actions }) {
             <input
                 type="file"
                 accept="application/pdf"
+                multiple
                 ref={fileInputRef}
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
@@ -142,7 +150,7 @@ export default function DocumentsScreen({ state, actions }) {
                                         {doc.name}
                                     </div>
                                     <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 4 }}>
-                                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                                        {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : ''}
                                     </div>
                                 </div>
                             </div>

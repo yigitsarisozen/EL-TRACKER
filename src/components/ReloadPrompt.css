@@ -7,9 +7,10 @@
 
 .ReloadPrompt-toast {
     position: fixed;
-    right: 0;
-    bottom: 0;
-    margin: 16px;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
     padding: 12px;
     border-radius: 8px;
     z-index: 1000;

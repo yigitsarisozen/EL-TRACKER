@@ -9,6 +9,16 @@ function ReloadPrompt() {
     } = useRegisterSW({
         onRegistered(r) {
             console.log('SW Registered: ' + r)
+            if (r) {
+                // Check for updates every time the window regains focus
+                window.addEventListener('focus', () => {
+                    r.update()
+                })
+                // Also check periodically (e.g. every hour)
+                setInterval(() => {
+                    r.update()
+                }, 60 * 60 * 1000)
+            }
         },
         onRegisterError(error) {
             console.log('SW registration error', error)

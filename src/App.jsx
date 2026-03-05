@@ -241,7 +241,7 @@ export default function App() {
             Check for updates
           </button>
           <a
-            href="https://github.com/yigitsarisozen/EL-TRACKER/releases"
+            href="https://github.com/yigitsarisozen/EL-TRACKER/releases/latest"
             target="_blank"
             rel="noopener noreferrer"
             style={{

@@ -240,6 +240,19 @@ export default function App() {
           >
             Check for updates
           </button>
+          <a
+            href="https://github.com/yigitsarisozen/EL-TRACKER/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              background: 'rgba(25, 118, 210, 0.1)', border: '1px solid rgba(25, 118, 210, 0.2)',
+              borderRadius: 8, padding: '6px 10px',
+              fontSize: 11, fontWeight: 700, color: '#4facfe',
+              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4
+            }}
+          >
+            <span>🤖</span> APK
+          </a>
           {/* Tap name → show logout confirm */}
           <button
             onClick={() => setShowLogoutConfirm(true)}

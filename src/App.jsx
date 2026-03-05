@@ -228,7 +228,18 @@ export default function App() {
             {subtitle && <div className="top-nav__subtitle">{subtitle}</div>}
           </div>
         </div>
-        <div className="top-nav__actions">
+        <div className="top-nav__actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('manual-check-updates'))}
+            style={{
+              background: 'rgba(255,255,255,0.06)', border: 'none',
+              borderRadius: 8, padding: '6px 10px',
+              fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
+              cursor: 'pointer'
+            }}
+          >
+            Check for updates
+          </button>
           {/* Tap name → show logout confirm */}
           <button
             onClick={() => setShowLogoutConfirm(true)}

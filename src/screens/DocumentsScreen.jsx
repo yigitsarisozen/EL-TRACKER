@@ -2,13 +2,14 @@ import React, { useState, useRef } from 'react';
 import { BottomSheet } from '../components/Shared';
 
 const CATEGORIES = [
+    { id: 'situations', title: 'Situations', icon: '🎭' },
     { id: 'guides', title: 'Guides', icon: '📚' },
     { id: 'quizzes', title: 'Quizzes', icon: '📝' },
     { id: 'writing', title: 'Writing', icon: '✍️' },
 ];
 
 export default function DocumentsScreen({ state, actions }) {
-    const [activeCategory, setActiveCategory] = useState('guides');
+    const [activeCategory, setActiveCategory] = useState('situations');
     const [uploadingCategory, setUploadingCategory] = useState(null);
     const [viewDoc, setViewDoc] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');

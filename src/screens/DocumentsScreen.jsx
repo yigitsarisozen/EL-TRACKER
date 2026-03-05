@@ -11,6 +11,7 @@ export default function DocumentsScreen({ state, actions }) {
     const [activeCategory, setActiveCategory] = useState('guides');
     const [uploadingCategory, setUploadingCategory] = useState(null);
     const [viewDoc, setViewDoc] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const fileInputRef = useRef(null);
 
     const handleUploadClick = (categoryId) => {
@@ -59,7 +60,15 @@ export default function DocumentsScreen({ state, actions }) {
         }
     };
 
-    const docsForCategory = state.documents?.filter(d => d.category === activeCategory) || [];
+    let docsForCategory = state.documents?.filter(d => d.category === activeCategory) || [];
+
+    // Sort alphabetically by default
+    docsForCategory.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Filter by search term
+    if (searchTerm) {
+        docsForCategory = docsForCategory.filter(doc => doc.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
 
     return (
         <div style={{ padding: 20 }}>
@@ -115,10 +124,30 @@ export default function DocumentsScreen({ state, actions }) {
                 </button>
             </div>
 
+            {/* Filter / Search Bar */}
+            <div style={{ marginBottom: 16 }}>
+                <input
+                    type="text"
+                    placeholder="Search documents by name..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-primary)',
+                        fontSize: 14,
+                        outline: 'none'
+                    }}
+                />
+            </div>
+
             {docsForCategory.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--bg-card)', borderRadius: 16 }}>
                     <div style={{ fontSize: 40, marginBottom: 10 }}>📂</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: 15 }}>No documents yet in this category.</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 15 }}>No documents found.</div>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gap: 12 }}>
@@ -135,18 +164,18 @@ export default function DocumentsScreen({ state, actions }) {
                             }}
                         >
                             <div
-                                style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', flex: 1 }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', flex: 1, minWidth: 0, paddingRight: 10 }}
                                 onClick={() => setViewDoc(doc)}
                             >
                                 <div style={{
                                     width: 40, height: 40, borderRadius: 10, background: 'rgba(239, 68, 68, 0.1)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: '#ef4444', fontSize: 20
+                                    color: '#ef4444', fontSize: 20, flexShrink: 0
                                 }}>
                                     📄
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {doc.name}
                                     </div>
                                     <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 4 }}>

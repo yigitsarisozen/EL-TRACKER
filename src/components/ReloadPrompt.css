@@ -1,0 +1,40 @@
+.ReloadPrompt-container {
+    padding: 0;
+    margin: 0;
+    width: 0;
+    height: 0;
+}
+
+.ReloadPrompt-toast {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    margin: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    z-index: 1000;
+    background-color: white;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    color: #333;
+}
+
+.ReloadPrompt-toast-button {
+    background: #7c6af7;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.ReloadPrompt-toast-button:last-child {
+    margin-right: 0;
+    background: #f0f0f0;
+    color: #333;
+}
+
+.ReloadPrompt-message {
+    margin-bottom: 8px;
+    font-size: 14px;
+}

@@ -9,12 +9,15 @@ import ClassDetailScreen from './screens/ClassDetailScreen';
 import StudentDetailScreen from './screens/StudentDetailScreen';
 import CurriculumScreen from './screens/CurriculumScreen';
 import TrashScreen from './screens/TrashScreen';
+import DocumentsScreen from './screens/DocumentsScreen';
 import { BottomSheet } from './components/Shared';
+import ReloadPrompt from './components/ReloadPrompt';
 
 // ─── Tab definitions ────────────────────────────────────────────────────────
 const TABS = [
   { id: 'classes', label: 'Classes', icon: '🏫' },
   { id: 'curriculum', label: 'Curriculum', icon: '📋' },
+  { id: 'documents', label: 'Documents', icon: '📁' },
   { id: 'trash', label: 'Trash', icon: '🗑' },
 ];
 
@@ -23,6 +26,7 @@ function getNavConfig(screen, params, state) {
   switch (screen) {
     case 'classes': return { title: 'Genç Akademi', showBack: false };
     case 'curriculum': return { title: 'Curriculum', showBack: false };
+    case 'documents': return { title: 'Documents', showBack: false };
     case 'trash': return { title: 'Trash', showBack: false };
     case 'class-detail': {
       const cls = state.classes.find(c => c.id === params.classId);
@@ -76,7 +80,7 @@ export default function App() {
 
   const navigate = useCallback((screen, params = {}) => {
     setHistory(prev => [...prev, { screen, params }]);
-    if (['classes', 'curriculum', 'trash'].includes(screen)) {
+    if (['classes', 'curriculum', 'documents', 'trash'].includes(screen)) {
       setActiveTab(screen);
     }
   }, []);
@@ -93,7 +97,7 @@ export default function App() {
       if (prev.length > 1) {
         const newHistory = prev.slice(0, -1);
         const newNav = newHistory[newHistory.length - 1];
-        if (['classes', 'curriculum', 'trash'].includes(newNav.screen)) {
+        if (['classes', 'curriculum', 'documents', 'trash'].includes(newNav.screen)) {
           setActiveTab(newNav.screen);
         }
         return newHistory;
@@ -178,6 +182,7 @@ export default function App() {
       case 'class-detail': return <ClassDetailScreen    {...props} />;
       case 'student-detail': return <StudentDetailScreen  {...props} />;
       case 'curriculum': return <CurriculumScreen     {...props} />;
+      case 'documents': return <DocumentsScreen      {...props} />;
       case 'trash': return <TrashScreen          {...props} />;
       default: return <ClassesScreen        {...props} />;
     }
@@ -187,6 +192,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <ReloadPrompt />
       {/* Syncing overlay */}
       {!state._synced && (
         <div style={{

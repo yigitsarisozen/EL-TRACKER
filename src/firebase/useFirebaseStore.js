@@ -28,6 +28,7 @@ const INITIAL_STATE = {
     classComments: [],
     curriculum: [],
     trash: [],
+    documents: [],
     generalCurriculum: null,
     _synced: false,
 };
@@ -39,6 +40,7 @@ function reducer(state, action) {
         case 'SNAP_STUDENTS': return { ...state, students: action.payload };
         case 'SNAP_CLASS_COMMENTS': return { ...state, classComments: action.payload };
         case 'SNAP_CURRICULUM': return { ...state, curriculum: action.payload };
+        case 'SNAP_DOCUMENTS': return { ...state, documents: action.payload };
         case 'SNAP_TRASH': return { ...state, trash: action.payload };
         case 'SNAP_SETTINGS': return { ...state, generalCurriculum: action.payload };
 
@@ -140,6 +142,10 @@ function reducer(state, action) {
             return { ...state, trash: state.trash.filter(t => t.id !== action.payload) };
         case 'OPT_EMPTY_TRASH':
             return { ...state, trash: [] };
+        case 'OPT_ADD_DOCUMENT':
+            return { ...state, documents: [...state.documents, action.payload] };
+        case 'OPT_DELETE_DOCUMENT':
+            return { ...state, documents: state.documents.filter(d => d.id !== action.payload) };
         default:
             return state;
     }
@@ -151,6 +157,7 @@ const C = {
     students: 'students',
     classComments: 'classComments',
     curriculum: 'curriculum',
+    documents: 'documents',
     trash: 'trash',
 };
 
@@ -165,6 +172,7 @@ export function useFirebaseStore() {
             onSnapshot(collection(db, C.students), snap => dispatch({ type: 'SNAP_STUDENTS', payload: snap.docs.map(d => ({ id: d.id, ...d.data() })) })),
             onSnapshot(collection(db, C.classComments), snap => dispatch({ type: 'SNAP_CLASS_COMMENTS', payload: snap.docs.map(d => ({ id: d.id, ...d.data() })) })),
             onSnapshot(collection(db, C.curriculum), snap => dispatch({ type: 'SNAP_CURRICULUM', payload: snap.docs.map(d => ({ id: d.id, ...d.data() })) })),
+            onSnapshot(collection(db, C.documents), snap => dispatch({ type: 'SNAP_DOCUMENTS', payload: snap.docs.map(d => ({ id: d.id, ...d.data() })) })),
             onSnapshot(collection(db, C.trash), snap => dispatch({ type: 'SNAP_TRASH', payload: snap.docs.map(d => ({ id: d.id, ...d.data() })) })),
             onSnapshot(doc(db, 'settings', 'app'), snap => dispatch({ type: 'SNAP_SETTINGS', payload: snap.exists() ? (snap.data().generalCurriculum || null) : null })),
         ];
@@ -377,6 +385,23 @@ export function useFirebaseStore() {
             const payload = { name, dataUrl: url, fileType, uploadedAt };
             dispatch({ type: 'OPT_SET_GENERAL_CURRICULUM', payload });
             setDoc(doc(db, 'settings', 'app'), { generalCurriculum: payload }, { merge: true }).catch(console.error);
+        },
+
+        // ── Documents ─────────────────────────────────────────────────────────
+        uploadDocument: async ({ category, name, dataUrl }) => {
+            const docId = uid();
+            let url = dataUrl;
+            if (dataUrl && dataUrl.startsWith('data:')) {
+                url = await uploadIfBase64(dataUrl, `documents/${docId}.pdf`);
+            }
+            const payload = { id: docId, category, name, dataUrl: url, uploadedAt: now() };
+            dispatch({ type: 'OPT_ADD_DOCUMENT', payload });
+            setDoc(doc(db, C.documents, docId), payload).catch(console.error);
+        },
+
+        deleteDocument: async (docId) => {
+            dispatch({ type: 'OPT_DELETE_DOCUMENT', payload: docId });
+            deleteDoc(doc(db, C.documents, docId)).catch(console.error);
         },
 
         // ── Trash ─────────────────────────────────────────────────────────────

@@ -193,6 +193,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <ReloadPrompt />
+      {/* Test Update for PWA Notification */}
       {/* Syncing overlay */}
       {!state._synced && (
         <div style={{

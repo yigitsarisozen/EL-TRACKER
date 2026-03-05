@@ -2,5 +2,9 @@
     "appId": "com.ys.eltracker",
     "appName": "Genç Akademi",
     "webDir": "dist",
-    "bundledWebRuntime": false
+    "bundledWebRuntime": false,
+    "server": {
+        "url": "https://el-tracker-ys.web.app",
+        "cleartext": true
+    }
 }

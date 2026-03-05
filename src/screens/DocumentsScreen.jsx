@@ -84,7 +84,11 @@ export default function DocumentsScreen({ state, actions }) {
             />
 
             {/* Category Tabs */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 20, overflowX: 'auto', paddingBottom: 5 }}>
+            <div
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                style={{ display: 'flex', gap: 10, marginBottom: 20, overflowX: 'auto', paddingBottom: 5 }}
+            >
                 {CATEGORIES.map(cat => (
                     <button
                         key={cat.id}

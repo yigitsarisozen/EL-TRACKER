@@ -160,7 +160,9 @@ export default function DocumentsScreen({ state, actions }) {
                                 borderRadius: 16,
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between'
+                                justifyContent: 'space-between',
+                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                             }}
                         >
                             <div
@@ -174,11 +176,11 @@ export default function DocumentsScreen({ state, actions }) {
                                 }}>
                                     📄
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                                    <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 13, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                         {doc.name}
                                     </div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 4 }}>
+                                    <div style={{ color: 'var(--text-secondary)', fontSize: 11, marginTop: 4 }}>
                                         {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : ''}
                                     </div>
                                 </div>
